@@ -261,6 +261,7 @@ public sealed partial class MainWindowViewModel
         Calendar!.WorkingHoursStart = settings.CalendarWorkingHoursStart;
         Calendar!.WorkingHoursEnd = settings.CalendarWorkingHoursEnd;
         Calendar!.TimeFormat24h = settings.CalendarTimeFormat24h;
+        Calendar!.ApplyHolidaySettings();
     }
 
     /// <summary>Lands on the Kanban page with a card's own read-only detail dialog already open, same one
@@ -645,6 +646,14 @@ public sealed partial class MainWindowViewModel
     {
         OpenSettings();
         Settings?.SelectSectionCommand.Execute(SettingsSection.Ai);
+    }
+
+    /// <summary>"Gestionar festivos" de la barra lateral del Calendario: lleva a Ajustes › Calendario, donde
+    /// se eligen los países.</summary>
+    private void OpenCalendarSettings()
+    {
+        OpenSettings();
+        Settings?.SelectSectionCommand.Execute(SettingsSection.Calendar);
     }
 
     private void OpenNoteFromQuickSwitcher(NoteFile note)

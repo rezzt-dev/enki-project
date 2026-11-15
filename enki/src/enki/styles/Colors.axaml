@@ -114,6 +114,11 @@
        El 90% de los matices de la UI no son colores nuevos: son la tinta a distintas
        opacidades sobre el fondo. Ver §1.2 de la guía de diseño. -->
   <SolidColorBrush x:Key="Ink05" Color="{DynamicResource InkColor}" Opacity="0.05" />
+  <!-- Fondo de los días no laborables del Calendario (fin de semana y festivos nacionales): un escalón
+       de tinta propio, entre Ink05 (hover/horario laboral) e Ink10 (costuras), para que el día no parezca
+       ni resaltado al pasar el puntero ni fundido con las líneas de la rejilla. Al ser tinta, aclara en el
+       tema oscuro y oscurece en el claro. -->
+  <SolidColorBrush x:Key="CalendarNonWorkingDayBrush" Color="{DynamicResource InkColor}" Opacity="0.07" />
   <SolidColorBrush x:Key="Ink10" Color="{DynamicResource InkColor}" Opacity="0.10" />
   <SolidColorBrush x:Key="Ink15" Color="{DynamicResource InkColor}" Opacity="0.15" />
   <SolidColorBrush x:Key="Ink20" Color="{DynamicResource InkColor}" Opacity="0.20" />

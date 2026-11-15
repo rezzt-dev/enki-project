@@ -9,17 +9,24 @@ namespace enki.ViewModels;
 /// <summary>One day-header group of the Agenda view (docs/calendar-feature/04-vistas-y-navegacion.md §6).
 /// <see cref="Build"/> is a pure static grouping function — no service dependency, so it's testable by
 /// constructing <see cref="CalendarItemViewModel"/>s directly — and, per the same §6, only ever produces
-/// groups for dates that actually have at least one item: days without any never show an empty group.</summary>
+/// groups for dates that actually have at least one item or holiday: days without either never show an
+/// empty group.</summary>
 public sealed class CalendarAgendaGroupViewModel
 {
     public DateTime Date { get; }
     public string HeaderLabel { get; }
     public IReadOnlyList<CalendarItemViewModel> Items { get; }
 
-    private CalendarAgendaGroupViewModel(DateTime date, IReadOnlyList<CalendarItemViewModel> items)
+    /// <summary>Festivos del día: se listan bajo la cabecera, antes de los items.</summary>
+    public IReadOnlyList<CalendarHolidayViewModel> Holidays { get; }
+
+    public bool HasHolidays => Holidays.Count > 0;
+
+    private CalendarAgendaGroupViewModel(DateTime date, IReadOnlyList<CalendarItemViewModel> items, IReadOnlyList<CalendarHolidayViewModel> holidays)
     {
         Date = date;
         Items = items;
+        Holidays = holidays;
 
         // Was a literal Spanish concatenation ("LUNES 17 DE AGOSTO", hardcoding " DE " between the day
         // number and the month name) over two 6-idiom-duplicated arrays — see docs/agent-docs/
@@ -36,14 +43,25 @@ public sealed class CalendarAgendaGroupViewModel
     /// come first and then by time — same criterion <see cref="Services.CalendarAggregationService"/>
     /// already applies globally, re-applied per-group here so this method's output is correct regardless
     /// of whether the caller's input list happens to be pre-sorted.</summary>
-    public static IReadOnlyList<CalendarAgendaGroupViewModel> Build(IEnumerable<CalendarItemViewModel> items)
+    /// <remarks>Un día festivo sin items también forma grupo (solo con sus festivos): en la Agenda es la
+    /// única forma de ver que ese día no se trabaja.</remarks>
+    public static IReadOnlyList<CalendarAgendaGroupViewModel> Build(
+        IEnumerable<CalendarItemViewModel> items,
+        IReadOnlyDictionary<DateTime, IReadOnlyList<CalendarHolidayViewModel>>? holidays = null)
     {
-        return items
-            .GroupBy(i => i.MomentLocal.Date)
-            .OrderBy(g => g.Key)
-            .Select(g => new CalendarAgendaGroupViewModel(
-                g.Key,
-                g.OrderBy(i => i.IsAllDay ? 0 : 1).ThenBy(i => i.MomentLocal).ToList()))
+        var byDay = items.GroupBy(i => i.MomentLocal.Date).ToDictionary(g => g.Key, g => g.ToList());
+        var days = holidays is null ? byDay.Keys : byDay.Keys.Union(holidays.Keys);
+
+        return days
+            .OrderBy(d => d)
+            .Select(day => new CalendarAgendaGroupViewModel(
+                day,
+                byDay.TryGetValue(day, out var dayItems)
+                    ? dayItems.OrderBy(i => i.IsAllDay ? 0 : 1).ThenBy(i => i.MomentLocal).ToList()
+                    : [],
+                holidays is not null && holidays.TryGetValue(day, out var dayHolidays)
+                    ? dayHolidays.OrderBy(h => h.Kind).ToList()
+                    : []))
             .ToList();
     }
 }

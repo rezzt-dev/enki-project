@@ -10,6 +10,11 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### CASTELLANO
 
 #### AÑADIDO
+- añadir festivos al calendario para los 27 paises de la union europea, latinoamerica, estados unidos y reino unido, calculados sin red en `services/holidays/` con traslados legales y dias sustitutivos
+- aclarar el fondo de los fines de semana y festivos nacionales en mes, semana, dia y mini-calendario, rotular festivos regionales y dias especiales y listarlos en la agenda
+- añadir la tarjeta `festivos y dias especiales` en `ajustes > calendario` con buscador de paises, pais sugerido por la region, una capa por pais y el enlace `gestionar festivos` en la barra lateral
+- añadir `HolidayServiceTests`, `CalendarHolidayViewModelTests`, `CalendarHolidaysUiTests`, textos en los siete recursos de idioma y `.docs/project-info/calendar-feature/15-festivos-y-dias-no-laborables.md`
+- añadir `.docs/agent-docs/tema-diseno-estilo-enki.md` con el diseño visual de enki y la paleta de `better-dark-dev.css`
 - añadir pruebas en `IconTextAlignmentUiTests` y `SettingsSearchUiTests` para fuentes, tamaños, zoom, etiquetas de varias lineas, menus y estabilidad entre layouts
 - añadir ajustes visuales de lista blanca con confirmacion, notificacion y reversion, sin acceso a claves, proveedores ni privacidad
 - añadir capas y filtros de `get_agenda`, consulta de calendarios externos desde cache y exportacion `.ics` con selector de destino
@@ -303,6 +308,11 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### ENGLISH
 
 #### ADDED
+- add calendar holidays for the 27 european union countries, latin america, the united states and the united kingdom, computed offline in `services/holidays/` with legal moves and substitute days
+- lighten weekends and national holidays in month, week, day and the mini calendar, label regional holidays and special days and list them in the agenda
+- add the `holidays and special days` card in `settings > calendar` with country search, a region-based suggestion, one layer per country and a `manage holidays` link in the sidebar
+- add `HolidayServiceTests`, `CalendarHolidayViewModelTests`, `CalendarHolidaysUiTests`, strings in the seven language resources and `.docs/project-info/calendar-feature/15-festivos-y-dias-no-laborables.md`
+- add `.docs/agent-docs/tema-diseno-estilo-enki.md` describing enki's visual design and the `better-dark-dev.css` palette
 - add tests in `IconTextAlignmentUiTests` and `SettingsSearchUiTests` for fonts, sizes, zoom, multiline labels, menus and stability across layouts
 - add allowlisted visual settings with confirmation, notifications and undo, without access to keys, providers or privacy settings
 - add layers and filters to `get_agenda`, cached external calendar queries and `.ics` export with a destination picker

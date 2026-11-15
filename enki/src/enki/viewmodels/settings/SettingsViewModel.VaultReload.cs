@@ -167,6 +167,7 @@ public sealed partial class SettingsViewModel
         OnPropertyChanged(nameof(CalendarWorkingHoursEnd));
         OnPropertyChanged(nameof(CalendarTimeFormat24h));
         OnPropertyChanged(nameof(CalendarPanelEnabled));
+        ReloadHolidaysForVault();
         OnPropertyChanged(nameof(SkillsPanelEnabled));
         OnPropertyChanged(nameof(DashboardPanelEnabled));
         OnPropertyChanged(nameof(KanbanPanelEnabled));

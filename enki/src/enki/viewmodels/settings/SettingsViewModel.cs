@@ -445,6 +445,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         ApplyInterfaceFont(settingsService.Settings.InterfaceFontFamily);
         ApplyCodeFont(settingsService.Settings.CodeFontFamily);
         InitializeExternalCalendars();
+        InitializeHolidays();
         InitializeAi(aiCliStatus, aiChatService);
         InitializeAiWeb(aiWebService);
         InitializeAiSemantic(aiSemanticIndex);
@@ -636,6 +637,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
     /// docs/agent-docs/internacionalizacion-i18n.md §3.3.</summary>
     public void RefreshLocalizedLabels()
     {
+        RebuildHolidayCountryGroups();
         OnPropertyChanged(nameof(AppVersionLabel));
         OnPropertyChanged(nameof(ActiveModuleProfileLabel));
         OnPropertyChanged(nameof(EditorFontSizeLabel));

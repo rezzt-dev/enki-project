@@ -8,8 +8,12 @@ namespace enki.ViewModels;
 /// indicator (<see cref="HasItems"/>) and, unlike the main grid, a notion of "selected" tied to
 /// <see cref="CalendarViewModel.ReferenceDate"/> since this is the one surface that actually drives that
 /// date via a click.</summary>
-public sealed class CalendarMiniDayViewModel(DateTime date, bool isCurrentMonth, bool isToday, bool isSelected, bool hasItems)
+public sealed class CalendarMiniDayViewModel(DateTime date, bool isCurrentMonth, bool isToday, bool isSelected, bool hasItems,
+    CalendarDayHolidayInfo? holiday = null)
 {
+    /// <summary>Mismo criterio de día inhábil que la vista Mes, para que ambas rejillas coincidan.</summary>
+    public CalendarDayHolidayInfo Holiday { get; } = holiday ?? CalendarDayHolidayInfo.None;
+
     public DateTime Date { get; } = date;
     public string DayLabel => Date.Day.ToString(CultureInfo.CurrentCulture);
     public bool IsCurrentMonth { get; } = isCurrentMonth;

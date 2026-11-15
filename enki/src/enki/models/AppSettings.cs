@@ -401,6 +401,21 @@ public sealed class AppSettings
     /// <summary>24h vs. 12h AM/PM time labels in the hour grid/chips.</summary>
     public bool CalendarTimeFormat24h { get; set; } = true;
 
+    // ===================== Calendario: festivos (docs/calendar-feature/15-festivos-y-dias-no-laborables.md) =====================
+
+    /// <summary>Códigos ISO 3166-1 alfa-2 de los países cuyos festivos muestra el Calendario
+    /// (<c>Services.Holidays.HolidayService</c>), en el orden en que se activaron. Vacío por defecto: los
+    /// festivos se activan, no se suponen. Cada país es además una capa ("holidays:ES") que se puede ocultar
+    /// desde la barra lateral del Calendario sin perder la selección.</summary>
+    public List<string> CalendarHolidayCountries { get; set; } = [];
+
+    /// <summary>Muestra también los festivos regionales y los días señalados (Nochebuena, Día de la Madre…).
+    /// Nunca aclaran la casilla; solo añaden la etiqueta.</summary>
+    public bool CalendarShowSecondaryHolidays { get; set; } = true;
+
+    /// <summary>Aclara el fondo de las casillas de fin de semana y de los festivos nacionales activos.</summary>
+    public bool CalendarShadeNonWorkingDays { get; set; } = true;
+
     /// <summary>Shows/hides the "Calendario" entry in the main nav entirely — same spirit as
     /// <see cref="RemindersPanelEnabled"/>/<see cref="NotificationsPanelEnabled"/>, for whoever prefers not
     /// to see it.</summary>

@@ -8884,4 +8884,157 @@ Bonne rédaction.</value>
   <data name="Assistant_Evaluation_Cancelled" xml:space="preserve">
     <value>Évaluation annulée. Aucun résultat partiel enregistré.</value>
   </data>
+  <data name="Holiday_Common_NewYear" xml:space="preserve">
+    <value>Jour de l'An</value>
+  </data>
+  <data name="Holiday_Common_Epiphany" xml:space="preserve">
+    <value>Épiphanie</value>
+  </data>
+  <data name="Holiday_Common_CarnivalMonday" xml:space="preserve">
+    <value>Lundi gras</value>
+  </data>
+  <data name="Holiday_Common_CarnivalTuesday" xml:space="preserve">
+    <value>Mardi gras</value>
+  </data>
+  <data name="Holiday_Common_MaundyThursday" xml:space="preserve">
+    <value>Jeudi saint</value>
+  </data>
+  <data name="Holiday_Common_GoodFriday" xml:space="preserve">
+    <value>Vendredi saint</value>
+  </data>
+  <data name="Holiday_Common_HolySaturday" xml:space="preserve">
+    <value>Samedi saint</value>
+  </data>
+  <data name="Holiday_Common_EasterSunday" xml:space="preserve">
+    <value>Dimanche de Pâques</value>
+  </data>
+  <data name="Holiday_Common_EasterMonday" xml:space="preserve">
+    <value>Lundi de Pâques</value>
+  </data>
+  <data name="Holiday_Common_LabourDay" xml:space="preserve">
+    <value>Fête du Travail</value>
+  </data>
+  <data name="Holiday_Common_Ascension" xml:space="preserve">
+    <value>Ascension</value>
+  </data>
+  <data name="Holiday_Common_Pentecost" xml:space="preserve">
+    <value>Pentecôte</value>
+  </data>
+  <data name="Holiday_Common_WhitMonday" xml:space="preserve">
+    <value>Lundi de Pentecôte</value>
+  </data>
+  <data name="Holiday_Common_CorpusChristi" xml:space="preserve">
+    <value>Fête-Dieu</value>
+  </data>
+  <data name="Holiday_Common_Assumption" xml:space="preserve">
+    <value>Assomption</value>
+  </data>
+  <data name="Holiday_Common_AllSaints" xml:space="preserve">
+    <value>Toussaint</value>
+  </data>
+  <data name="Holiday_Common_AllSouls" xml:space="preserve">
+    <value>Jour des morts</value>
+  </data>
+  <data name="Holiday_Common_ImmaculateConception" xml:space="preserve">
+    <value>Immaculée Conception</value>
+  </data>
+  <data name="Holiday_Common_ChristmasEve" xml:space="preserve">
+    <value>Réveillon de Noël</value>
+  </data>
+  <data name="Holiday_Common_Christmas" xml:space="preserve">
+    <value>Noël</value>
+  </data>
+  <data name="Holiday_Common_StStephen" xml:space="preserve">
+    <value>Saint-Étienne</value>
+  </data>
+  <data name="Holiday_Common_NewYearsEve" xml:space="preserve">
+    <value>Saint-Sylvestre</value>
+  </data>
+  <data name="Holiday_Common_MothersDay" xml:space="preserve">
+    <value>Fête des mères</value>
+  </data>
+  <data name="Holiday_Common_FathersDay" xml:space="preserve">
+    <value>Fête des pères</value>
+  </data>
+  <data name="Holiday_Common_ValentinesDay" xml:space="preserve">
+    <value>Saint-Valentin</value>
+  </data>
+  <data name="Holiday_Common_Halloween" xml:space="preserve">
+    <value>Halloween</value>
+  </data>
+  <data name="Holiday_Substitute" xml:space="preserve">
+    <value>{0} (jour férié reporté)</value>
+  </data>
+  <data name="Calendar_Holiday_KindPublic" xml:space="preserve">
+    <value>Jour férié national</value>
+  </data>
+  <data name="Calendar_Holiday_KindRegional" xml:space="preserve">
+    <value>Jour férié régional</value>
+  </data>
+  <data name="Calendar_Holiday_KindObservance" xml:space="preserve">
+    <value>Journée particulière</value>
+  </data>
+  <data name="Calendar_Holiday_Tooltip" xml:space="preserve">
+    <value>{0} — {1} · {2}</value>
+  </data>
+  <data name="Calendar_Holiday_MoreCount" xml:space="preserve">
+    <value>+{0}</value>
+  </data>
+  <data name="Calendar_Sidebar_LayerHolidays" xml:space="preserve">
+    <value>Jours fériés · {0}</value>
+  </data>
+  <data name="Calendar_Sidebar_ManageHolidays" xml:space="preserve">
+    <value>Gérer les jours fériés</value>
+  </data>
+  <data name="Settings_Calendar_Holidays_Title" xml:space="preserve">
+    <value>Jours fériés et journées particulières</value>
+  </data>
+  <data name="Settings_Calendar_Holidays_Description" xml:space="preserve">
+    <value>Affiche dans le calendrier les jours fériés d'un ou plusieurs pays. Les jours fériés nationaux et les week-ends apparaissent sur un fond plus clair ; les jours fériés régionaux et les journées particulières sont seulement indiqués. Les dates sont calculées sur cet appareil, sans connexion Internet.</value>
+  </data>
+  <data name="Settings_Calendar_Holidays_Limitations" xml:space="preserve">
+    <value>Les jours fixés chaque année par décret (ponts, fêtes locales, vacances scolaires) ne peuvent pas être calculés et ne sont pas inclus.</value>
+  </data>
+  <data name="Settings_Calendar_Holidays_CountriesLabel" xml:space="preserve">
+    <value>Pays</value>
+  </data>
+  <data name="Settings_Calendar_Holidays_GroupEu" xml:space="preserve">
+    <value>Union européenne</value>
+  </data>
+  <data name="Settings_Calendar_Holidays_GroupLatam" xml:space="preserve">
+    <value>Amérique latine</value>
+  </data>
+  <data name="Settings_Calendar_Holidays_GroupOther" xml:space="preserve">
+    <value>Autres pays</value>
+  </data>
+  <data name="Settings_Calendar_Holidays_NoneSelected" xml:space="preserve">
+    <value>Aucun pays sélectionné</value>
+  </data>
+  <data name="Settings_Calendar_Holidays_SelectedSummary" xml:space="preserve">
+    <value>Actifs ({0}) : {1}</value>
+  </data>
+  <data name="Settings_Calendar_Holidays_AddSuggested" xml:space="preserve">
+    <value>Ajouter {0}</value>
+  </data>
+  <data name="Settings_Calendar_Holidays_Clear" xml:space="preserve">
+    <value>Tout désélectionner</value>
+  </data>
+  <data name="Settings_Calendar_Holidays_SearchPlaceholder" xml:space="preserve">
+    <value>Rechercher un pays</value>
+  </data>
+  <data name="Settings_Calendar_Holidays_NoMatches" xml:space="preserve">
+    <value>Aucun pays ne correspond à la recherche.</value>
+  </data>
+  <data name="Settings_Calendar_Holidays_ShadeLabel" xml:space="preserve">
+    <value>Éclaircir les jours non ouvrés</value>
+  </data>
+  <data name="Settings_Calendar_Holidays_ShadeDescription" xml:space="preserve">
+    <value>Les week-ends et les jours fériés nationaux des pays actifs ont un fond plus clair dans toutes les vues.</value>
+  </data>
+  <data name="Settings_Calendar_Holidays_SecondaryLabel" xml:space="preserve">
+    <value>Afficher les jours fériés régionaux et les journées particulières</value>
+  </data>
+  <data name="Settings_Calendar_Holidays_SecondaryDescription" xml:space="preserve">
+    <value>Réveillon de Noël, fête des mères ou jours fériés limités à une partie du pays. Ils sont indiqués sans éclaircir la journée.</value>
+  </data>
 </root>

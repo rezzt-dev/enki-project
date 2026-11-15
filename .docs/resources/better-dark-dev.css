@@ -1,0 +1,34 @@
+/* ============================================================
+   Enki — Tema personalizado
+   ============================================================ */
+
+:root {
+  /* Fondos */
+  --app-background: #080808;
+  --app-background-alt: #0A0A0A;
+  --sidebar-background: #0A0A0A;
+  --surface: #0D0D0D;
+  --panel-background: #101010;
+  --panel-background-hover: #181818;
+  --input-background: #0C0C0C;
+  --row-background: #0C0C0C;
+  --row-background-hover: #151515;
+
+  /* Texto */
+  --text-primary: #EEEEEE;
+  --text-secondary: #929292;
+  --text-muted: #585858;
+
+  /* Tinta y acento */
+  --ink: #EEEEEE;
+  --ink-on: #181818;
+  --accent: #CCCCCC;
+
+  /* Scroll */
+  --scroll-track: #080808;
+
+  /* Estado */
+  --danger: #FF6B6B;
+  --success: #54AD7D;
+  --highlight: #D9A952;
+}

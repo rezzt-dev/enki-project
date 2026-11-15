@@ -2157,6 +2157,87 @@
                 </StackPanel>
               </Border>
             </controls:SettingsSearchOption>
+            <!-- Festivos y días no laborables (docs/calendar-feature/15-festivos-y-dias-no-laborables.md):
+                 países del catálogo integrado, sin red; cada país activo es además una capa del Calendario. -->
+            <controls:SettingsSearchOption
+                ResourceKeys="Settings_Nav_Calendar Settings_Calendar_Holidays_Title Settings_Calendar_Holidays_Description
+                              Settings_Calendar_Holidays_ShadeLabel Settings_Calendar_Holidays_ShadeDescription
+                              Settings_Calendar_Holidays_SecondaryLabel Settings_Calendar_Holidays_SecondaryDescription
+                              Settings_Calendar_Holidays_CountriesLabel Settings_Calendar_Holidays_GroupEu
+                              Settings_Calendar_Holidays_GroupLatam Settings_Calendar_Holidays_GroupOther">
+              <Border Classes="card" Padding="22">
+                <StackPanel Spacing="14">
+                  <StackPanel Orientation="Horizontal" Spacing="9">
+                    <mi:MaterialIcon Kind="CalendarStar" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
+                    <TextBlock Text="{loc:Tr Settings_Calendar_Holidays_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+                  </StackPanel>
+                  <TextBlock Text="{loc:Tr Settings_Calendar_Holidays_Description}" Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+
+                  <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Grid.Column="0" Spacing="3">
+                      <TextBlock Text="{loc:Tr Settings_Calendar_Holidays_ShadeLabel}" FontSize="13" />
+                      <TextBlock Text="{loc:Tr Settings_Calendar_Holidays_ShadeDescription}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding CalendarShadeNonWorkingDays}" OnContent="" OffContent=""
+                                  AutomationProperties.Name="{loc:Tr Settings_Calendar_Holidays_ShadeLabel}" />
+                  </Grid>
+                  <Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
+                  <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Grid.Column="0" Spacing="3">
+                      <TextBlock Text="{loc:Tr Settings_Calendar_Holidays_SecondaryLabel}" FontSize="13" />
+                      <TextBlock Text="{loc:Tr Settings_Calendar_Holidays_SecondaryDescription}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding CalendarShowSecondaryHolidays}" OnContent="" OffContent=""
+                                  AutomationProperties.Name="{loc:Tr Settings_Calendar_Holidays_SecondaryLabel}" />
+                  </Grid>
+                  <Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,4" />
+
+                  <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                    <TextBlock Grid.Column="0" Grid.Row="0" Text="{loc:Tr Settings_Calendar_Holidays_CountriesLabel}" FontSize="13" />
+                    <TextBlock Grid.Column="0" Grid.Row="1" Text="{Binding HolidaySelectionSummary}" Classes="muted" FontSize="11.5"
+                               TextWrapping="Wrap" Margin="0,3,12,0" />
+                    <StackPanel Grid.Column="1" Grid.RowSpan="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                      <Button Classes="pill" IsVisible="{Binding CanAddSuggestedHolidayCountry}"
+                              Command="{Binding AddSuggestedHolidayCountryCommand}"
+                              Content="{Binding SuggestedHolidayCountryLabel, Converter={StaticResource UpperCaseConverter}}" />
+                      <Button Classes="ghost" IsVisible="{Binding HasSelectedHolidayCountries}"
+                              Command="{Binding ClearHolidayCountriesCommand}"
+                              Content="{loc:Tr Settings_Calendar_Holidays_Clear, Converter={StaticResource UpperCaseConverter}}" />
+                    </StackPanel>
+                  </Grid>
+                  <TextBox Classes="search" Text="{Binding HolidayCountrySearch}"
+                           PlaceholderText="{loc:Tr Settings_Calendar_Holidays_SearchPlaceholder}"
+                           AutomationProperties.Name="{loc:Tr Settings_Calendar_Holidays_SearchPlaceholder}" />
+                  <ItemsControl ItemsSource="{Binding HolidayCountryGroups}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:HolidayCountryGroupViewModel">
+                        <StackPanel Spacing="8" Margin="0,0,0,10" IsVisible="{Binding HasVisibleCountries}">
+                          <TextBlock Text="{Binding Title, Converter={StaticResource UpperCaseConverter}}" Classes="faint" FontSize="9.5" />
+                          <ItemsControl ItemsSource="{Binding Countries}">
+                            <ItemsControl.ItemsPanel>
+                              <ItemsPanelTemplate>
+                                <WrapPanel />
+                              </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                              <DataTemplate x:DataType="vm:HolidayCountryOptionViewModel">
+                                <ToggleButton Classes="tag-chip" IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                              IsVisible="{Binding IsVisible}" Content="{Binding DisplayName}"
+                                              AutomationProperties.Name="{Binding DisplayName}" />
+                              </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                          </ItemsControl>
+                        </StackPanel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <TextBlock Text="{loc:Tr Settings_Calendar_Holidays_NoMatches}" Classes="muted" FontSize="11.5"
+                             IsVisible="{Binding HasNoHolidayCountryMatches}" />
+                  <TextBlock Text="{loc:Tr Settings_Calendar_Holidays_Limitations}" Classes="faint" FontSize="11" TextWrapping="Wrap" />
+                </StackPanel>
+              </Border>
+            </controls:SettingsSearchOption>
+
             <controls:SettingsSearchOption
                 ResourceKeys="Settings_Nav_Calendar Settings_Calendar_DefaultView_Title Settings_Calendar_DefaultView_Description
                               Settings_Calendar_View_Month Settings_Calendar_View_Week Settings_Calendar_View_Day

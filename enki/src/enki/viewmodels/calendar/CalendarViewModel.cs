@@ -9,6 +9,7 @@ using CommunityToolkit.Mvvm.Input;
 using enki.Localization;
 using enki.Models;
 using enki.Services;
+using enki.Services.Holidays;
 using Material.Icons;
 
 namespace enki.ViewModels;
@@ -50,7 +51,12 @@ public sealed partial class CalendarViewModel : ViewModelBase
     private readonly SettingsService _settingsService;
     private readonly NotificationService _notificationService;
     private readonly Action<CalendarItemViewModel> _openItemEditor;
+    private readonly HolidayService _holidayService;
+    private readonly Action? _openHolidaySettings;
     private readonly DispatcherTimer _nowTimer;
+
+    /// <summary>Huella de los ajustes de festivos aplicados por última vez — ver <see cref="ApplyHolidaySettings"/>.</summary>
+    private string _holidaySettingsSignature = string.Empty;
 
     /// <summary>Debounces <see cref="Rebuild"/> against every keystroke in the search box — it re-fetches
     /// and re-filters the whole visible range from <see cref="CalendarAggregationService"/>, which on a
@@ -378,8 +384,12 @@ public sealed partial class CalendarViewModel : ViewModelBase
         SettingsService settingsService,
         NotificationService notificationService,
         Action<CalendarItemViewModel> openItemEditor,
-        ExternalCalendarService? externalCalendarService = null)
+        ExternalCalendarService? externalCalendarService = null,
+        HolidayService? holidayService = null,
+        Action? openHolidaySettings = null)
     {
+        _holidayService = holidayService ?? HolidayService.Shared;
+        _openHolidaySettings = openHolidaySettings;
         _aggregationService = aggregationService;
         _externalCalendarService = externalCalendarService;
         _layerColorService = layerColorService;
@@ -411,6 +421,7 @@ public sealed partial class CalendarViewModel : ViewModelBase
         _activeView = ParseViewMode(_settingsService.Settings.CalendarDefaultView);
 
         RebuildHourRows();
+        _holidaySettingsSignature = HolidaySettingsSignature();
 
         // Same live-refresh pattern as ReminderInboxViewModel (docs/notificaciones-y-recordatorios.md):
         // whichever of the three sources changes, the calendar just rebuilds itself — no manual "Reload"
@@ -466,8 +477,62 @@ public sealed partial class CalendarViewModel : ViewModelBase
         WorkingHoursEnd = settings.CalendarWorkingHoursEnd;
         TimeFormat24h = settings.CalendarTimeFormat24h;
         ActiveView = ParseViewMode(settings.CalendarDefaultView);
+        _holidaySettingsSignature = HolidaySettingsSignature();
         Rebuild();
     }
+
+    // ===================== Festivos y días no laborables (docs/calendar-feature/15-festivos-y-dias-no-laborables.md) =====================
+
+    /// <summary>Aplica en caliente los ajustes de festivos (países, regionales/señalados, aclarar días
+    /// inhábiles) que <see cref="MainWindowViewModel"/> empuja tras cambiarlos en Ajustes. Solo reconstruye si
+    /// alguno cambió de verdad: el mismo callback llega también por cambios de otros ajustes de la página.</summary>
+    public void ApplyHolidaySettings()
+    {
+        var signature = HolidaySettingsSignature();
+        if (signature == _holidaySettingsSignature) return;
+        _holidaySettingsSignature = signature;
+        Rebuild();
+    }
+
+    private string HolidaySettingsSignature()
+    {
+        var settings = _settingsService.Settings;
+        return string.Join(',', settings.CalendarHolidayCountries) + "|" + settings.CalendarShowSecondaryHolidays + "|" + settings.CalendarShadeNonWorkingDays;
+    }
+
+    /// <summary>Países activos en Ajustes que existen en el catálogo, en su orden de activación.</summary>
+    private List<string> ConfiguredHolidayCountries() =>
+        _settingsService.Settings.CalendarHolidayCountries
+            .Where(HolidayService.IsSupported)
+            .Select(c => c.ToUpperInvariant())
+            .Distinct()
+            .ToList();
+
+    /// <summary>Color de la capa de cada país configurado: el elegido a mano o el de la paleta por posición.</summary>
+    private Dictionary<string, string> HolidayCountryColors(IReadOnlyList<string> countries) =>
+        countries
+            .Select((code, index) => (code, color: _layerColorService.ResolveOrDefault(
+                CalendarHolidayViewModel.LayerKeyFor(code), CalendarHolidayViewModel.DefaultColorFor(index))))
+            .ToDictionary(e => e.code, e => e.color, StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Festivos visibles (países configurados cuya capa no está oculta) agrupados por día local.</summary>
+    private IReadOnlyDictionary<DateTime, IReadOnlyList<CalendarHolidayViewModel>> BuildHolidayLookup(DateTime startLocal, DateTime endLocalExclusive)
+    {
+        var configured = ConfiguredHolidayCountries();
+        var hidden = _settingsService.Settings.CalendarHiddenLayerKeys;
+        var visible = configured.Where(c => !hidden.Contains(CalendarHolidayViewModel.LayerKeyFor(c))).ToList();
+        return CalendarHolidayViewModel.BuildLookup(_holidayService, visible, HolidayCountryColors(configured),
+            _settingsService.Settings.CalendarShowSecondaryHolidays, startLocal, endLocalExclusive);
+    }
+
+    private bool ShadeNonWorkingDays => _settingsService.Settings.CalendarShadeNonWorkingDays;
+
+    /// <summary>El enlace "Gestionar festivos" de la barra lateral solo aparece si la shell sabe abrir
+    /// Ajustes › Calendario (en las pruebas no hay shell).</summary>
+    public bool CanOpenHolidaySettings => _openHolidaySettings is not null;
+
+    [RelayCommand]
+    private void OpenHolidaySettings() => _openHolidaySettings?.Invoke();
 
     public void RefreshLocalizedLabels()
     {
@@ -673,6 +738,8 @@ public sealed partial class CalendarViewModel : ViewModelBase
         var rangeEndUtc = dates[^1].AddDays(1).ToUniversalTime();
 
         var items = BuildFilteredItems(rangeStartUtc, rangeEndUtc);
+        var holidays = BuildHolidayLookup(dates[0], dates[^1].AddDays(1));
+        var shade = ShadeNonWorkingDays;
         var today = DateTime.Today;
         var columns = MonthGridColumns;
 
@@ -686,7 +753,12 @@ public sealed partial class CalendarViewModel : ViewModelBase
             var dayItems = isCurrentMonth
                 ? items.Where(i => i.MomentLocal.Date == date.Date).ToList()
                 : new List<CalendarItemViewModel>();
-            Days.Add(new CalendarMonthDayViewModel(date, isCurrentMonth, date == today, date == ReferenceDate.Date, dayItems, Days.Count, columns));
+            // Igual que los items, los festivos de días de otro mes no se rotulan; el fin de semana sí se
+            // aclara para que la franja de sábados y domingos no se corte en las semanas de borde.
+            var holiday = isCurrentMonth
+                ? CalendarDayHolidayInfo.For(date, holidays, shade)
+                : new CalendarDayHolidayInfo([], !IsWeekday(date), shade);
+            Days.Add(new CalendarMonthDayViewModel(date, isCurrentMonth, date == today, date == ReferenceDate.Date, dayItems, Days.Count, columns, holiday));
         }
     }
 
@@ -699,6 +771,8 @@ public sealed partial class CalendarViewModel : ViewModelBase
         var rangeStartUtc = monday.ToUniversalTime();
         var rangeEndUtc = sunday.AddDays(1).ToUniversalTime();
         var items = BuildFilteredItems(rangeStartUtc, rangeEndUtc);
+        var holidays = BuildHolidayLookup(monday, sunday.AddDays(1));
+        var shade = ShadeNonWorkingDays;
         var nowLocal = DateTime.Now;
 
         WeekColumns.Clear();
@@ -707,7 +781,7 @@ public sealed partial class CalendarViewModel : ViewModelBase
             var date = monday.AddDays(i);
             if (!ShowWeekends && !IsWeekday(date)) continue;
             var dayItems = items.Where(it => it.MomentLocal.Date == date.Date).ToList();
-            WeekColumns.Add(new CalendarWeekColumnViewModel(date, dayItems, nowLocal));
+            WeekColumns.Add(new CalendarWeekColumnViewModel(date, dayItems, nowLocal, CalendarDayHolidayInfo.For(date, holidays, shade)));
         }
     }
 
@@ -721,9 +795,10 @@ public sealed partial class CalendarViewModel : ViewModelBase
         var rangeStartUtc = date.ToUniversalTime();
         var rangeEndUtc = date.AddDays(1).ToUniversalTime();
         var items = BuildFilteredItems(rangeStartUtc, rangeEndUtc);
+        var holidays = BuildHolidayLookup(date, date.AddDays(1));
 
         WeekColumns.Clear();
-        WeekColumns.Add(new CalendarWeekColumnViewModel(date, items, DateTime.Now));
+        WeekColumns.Add(new CalendarWeekColumnViewModel(date, items, DateTime.Now, CalendarDayHolidayInfo.For(date, holidays, ShadeNonWorkingDays)));
     }
 
     private void RebuildAgenda()
@@ -735,7 +810,7 @@ public sealed partial class CalendarViewModel : ViewModelBase
         var items = BuildFilteredItems(start.ToUniversalTime(), end.ToUniversalTime());
 
         AgendaGroups.Clear();
-        foreach (var group in CalendarAgendaGroupViewModel.Build(items)) AgendaGroups.Add(group);
+        foreach (var group in CalendarAgendaGroupViewModel.Build(items, BuildHolidayLookup(start, end))) AgendaGroups.Add(group);
         IsAgendaEmpty = AgendaGroups.Count == 0;
     }
 
@@ -753,12 +828,17 @@ public sealed partial class CalendarViewModel : ViewModelBase
             .Select(i => i.MomentLocal.Date)
             .ToHashSet();
 
+        var holidays = BuildHolidayLookup(dates[0], dates[^1].AddDays(1));
+        var shade = ShadeNonWorkingDays;
         var today = DateTime.Today;
         MiniCalendarDays.Clear();
         foreach (var date in dates)
         {
             var isCurrentMonth = date.Month == MiniCalendarMonth.Month && date.Year == MiniCalendarMonth.Year;
-            MiniCalendarDays.Add(new CalendarMiniDayViewModel(date, isCurrentMonth, date == today, date == ReferenceDate.Date, itemDates.Contains(date.Date)));
+            var holiday = isCurrentMonth
+                ? CalendarDayHolidayInfo.For(date, holidays, shade)
+                : new CalendarDayHolidayInfo([], !IsWeekday(date), shade);
+            MiniCalendarDays.Add(new CalendarMiniDayViewModel(date, isCurrentMonth, date == today, date == ReferenceDate.Date, itemDates.Contains(date.Date), holiday));
         }
     }
 
@@ -855,6 +935,19 @@ public sealed partial class CalendarViewModel : ViewModelBase
                     string.Empty, feed.Name, CalendarLayerPalette.PickerSwatches[index++ % CalendarLayerPalette.PickerSwatches.Count],
                     CanEditColor: false, HasCustomColor: false, IsChildRow: false));
             }
+        }
+
+        // Una capa por país con festivos activos: se oculta sin perder la selección de Ajustes y su color
+        // identifica la etiqueta del festivo en las casillas.
+        var holidayCountries = ConfiguredHolidayCountries();
+        var holidayColors = HolidayCountryColors(holidayCountries);
+        foreach (var code in holidayCountries)
+        {
+            var key = CalendarHolidayViewModel.LayerKeyFor(code);
+            desired.Add(new LayerRow(key, key,
+                string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Calendar_Sidebar_LayerHolidays"],
+                    HolidayService.CountryDisplayName(code)),
+                holidayColors[code], CanEditColor: true, _layerColorService.HasCustomColor(key), IsChildRow: false));
         }
 
         // La identidad de una fila es su clave de color (única por fila, a diferencia de Key, que las

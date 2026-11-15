@@ -508,7 +508,8 @@ public sealed partial class MainWindowViewModel
             LocalizationService.Instance["Calendar_External_Source"],
             LocalizationService.Instance["Calendar_External_Failed"], enki.Models.NotificationSeverity.Warning);
         var calendarAggregationService = new CalendarAggregationService(_kanbanService, _polarTaskService, _reminderService, _polarAuthService, calendarLayerColorService, externalCalendarService);
-        Calendar = new CalendarViewModel(calendarAggregationService, calendarLayerColorService, _kanbanService, _polarTaskService, _reminderService, _polarAuthService, _settingsService, _notificationService, OpenCalendarItemEditor, externalCalendarService);
+        Calendar = new CalendarViewModel(calendarAggregationService, calendarLayerColorService, _kanbanService, _polarTaskService, _reminderService, _polarAuthService, _settingsService, _notificationService, OpenCalendarItemEditor, externalCalendarService,
+            openHolidaySettings: OpenCalendarSettings);
         Notes = new NotesViewModel(_vaultService, _sessionService, _kanbanService, OpenKanbanCard, _settingsService, _notificationService, _noteSearchService, _noteTemplateService, _vaultSettingsService,
             _habitService, () => Navigate(AppPage.Habits), () => Navigate(AppPage.Statistics), _vaultChangeWatcher);
         Notes.PropertyChanged += OnNotesPropertyChanged;

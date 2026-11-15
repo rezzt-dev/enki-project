@@ -38,6 +38,10 @@ public sealed partial class CalendarMonthDayViewModel : ObservableObject
     /// but for the bottom edge.</summary>
     public bool IsLastRow { get; }
 
+    /// <summary>Festivos del día y si la casilla se aclara por ser inhábil (fin de semana o festivo
+    /// nacional) — docs/calendar-feature/15-festivos-y-dias-no-laborables.md.</summary>
+    public CalendarDayHolidayInfo Holiday { get; }
+
     public IReadOnlyList<CalendarItemViewModel> Items { get; }
     public IReadOnlyList<CalendarItemViewModel> VisibleItems { get; }
     public int OverflowCount { get; }
@@ -50,8 +54,10 @@ public sealed partial class CalendarMonthDayViewModel : ObservableObject
     /// freely instead of the XAML always prefixing "DAY".</summary>
     public string OverflowPopoverHeaderLabel => string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["Calendar_Month_DayPopoverHeader"], DayLabel);
 
-    public CalendarMonthDayViewModel(DateTime date, bool isCurrentMonth, bool isToday, bool isSelected, IReadOnlyList<CalendarItemViewModel> items, int index, int columns = 7)
+    public CalendarMonthDayViewModel(DateTime date, bool isCurrentMonth, bool isToday, bool isSelected, IReadOnlyList<CalendarItemViewModel> items, int index, int columns = 7,
+        CalendarDayHolidayInfo? holiday = null)
     {
+        Holiday = holiday ?? CalendarDayHolidayInfo.None;
         Date = date;
         IsCurrentMonth = isCurrentMonth;
         IsToday = isToday;

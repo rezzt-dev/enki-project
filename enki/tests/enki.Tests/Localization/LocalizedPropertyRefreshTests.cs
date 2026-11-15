@@ -35,9 +35,11 @@ public class LocalizedPropertyRefreshTests
     {
         ["AiAttachmentPickerItemViewModel"] = "AssistantViewModel.CollectPickerItems, cada vez que se abre el selector de adjuntos",
         ["CalendarMonthDayViewModel"] = "CalendarViewModel.Rebuild → RebuildMonth",
+        ["CalendarHolidayViewModel"] = "CalendarViewModel.Rebuild → BuildHolidayLookup (también CalendarDayHolidayInfo, en el mismo fichero)",
         ["DailyConsistencyDayViewModel"] = "NotesViewModel.ReloadConsistency (también al cambiar de idioma, ver RefreshLocalizedLabels)",
         ["FileFolderCardViewModel"] = "FilesViewModel.Reload",
         ["HabitItemViewModel"] = "HabitsViewModel.Reload",
+        ["HolidayCountryOptionViewModel"] = "SettingsViewModel.RefreshLocalizedLabels → RebuildHolidayCountryGroups (también HolidayCountryGroupViewModel, en el mismo fichero)",
         ["KanbanCardViewModel"] = "KanbanViewModel.Reload → AddColumnViewModel",
         ["NoteCardViewModel"] = "NotesViewModel.Reload",
         ["NoteVersionItemViewModel"] = "EditorVersionHistoryViewModel.Reload",

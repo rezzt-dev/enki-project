@@ -2624,6 +2624,41 @@
   <Style Selector="Border.calendar-day-badge.today">
     <Setter Property="Background" Value="{DynamicResource InkBrush}" />
   </Style>
+
+  <!-- ===================== Calendario — festivos y días no laborables (docs/calendar-feature/
+       15-festivos-y-dias-no-laborables.md) =====================
+       El fin de semana y los festivos nacionales se aclaran con CalendarNonWorkingDayBrush. En Mes es una
+       capa propia dentro de la celda (la celda sigue siendo opaca para no destapar las costuras de
+       GridSeamBrush) y no recibe clics, para que el clic vacío siga llegando a la capa de creación rápida.
+       Los selectores excluyen arrastre, hover y selección: esos estados se dibujan después y deben ganar. -->
+  <Style Selector="Border.calendar-nonworking-fill">
+    <Setter Property="Background" Value="{DynamicResource CalendarNonWorkingDayBrush}" />
+    <Setter Property="IsHitTestVisible" Value="False" />
+  </Style>
+  <Style Selector="Button.calendar-day.non-working:not(.selected):not(:pointerover) /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource CalendarNonWorkingDayBrush}" />
+  </Style>
+  <Style Selector="Border.calendar-week-column.non-working:not(.drag-over)">
+    <Setter Property="Background" Value="{DynamicResource CalendarNonWorkingDayBrush}" />
+  </Style>
+  <Style Selector="Border.calendar-week-header.non-working">
+    <Setter Property="Background" Value="{DynamicResource CalendarNonWorkingDayBrush}" />
+  </Style>
+
+  <!-- Etiqueta del festivo junto al número del día: marca de 2px con el color de la capa del país (el
+       mismo que se elige en la barra lateral) y texto secundario, para no competir con los chips. -->
+  <Style Selector="Border.calendar-holiday-mark">
+    <Setter Property="Width" Value="2" />
+    <Setter Property="Height" Value="10" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Margin" Value="0,0,5,0" />
+  </Style>
+  <Style Selector="TextBlock.calendar-holiday-label">
+    <Setter Property="FontSize" Value="9.5" />
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
   <Style Selector="TextBlock.calendar-day-number">
     <Setter Property="FontFamily" Value="{DynamicResource InterfaceLabelFontFamily}" />
     <Setter Property="FontSize" Value="11" />

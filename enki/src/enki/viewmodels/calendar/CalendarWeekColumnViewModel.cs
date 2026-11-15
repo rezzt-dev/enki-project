@@ -27,6 +27,9 @@ public sealed partial class CalendarWeekColumnViewModel : ObservableObject
     public DateTime Date { get; }
     public string DayLabel { get; }
     public bool IsToday { get; }
+    /// <summary>Festivos del día y si la columna se aclara por ser inhábil.</summary>
+    public CalendarDayHolidayInfo Holiday { get; }
+
     public IReadOnlyList<CalendarItemViewModel> AllDayItems { get; }
     public IReadOnlyList<CalendarTimedItemViewModel> TimedItems { get; }
 
@@ -35,9 +38,11 @@ public sealed partial class CalendarWeekColumnViewModel : ObservableObject
     [ObservableProperty]
     private double? _nowOffsetY;
 
-    public CalendarWeekColumnViewModel(DateTime date, IReadOnlyList<CalendarItemViewModel> dayItems, DateTime nowLocal)
+    public CalendarWeekColumnViewModel(DateTime date, IReadOnlyList<CalendarItemViewModel> dayItems, DateTime nowLocal,
+        CalendarDayHolidayInfo? holiday = null)
     {
         Date = date.Date;
+        Holiday = holiday ?? CalendarDayHolidayInfo.None;
         IsToday = Date == nowLocal.Date;
         // Was a 4th, undocumented copy of the hardcoded-Spanish-weekday-array bug described in
         // docs/agent-docs/internacionalizacion-i18n.md §1.7 (that section only counts 6 across the rest

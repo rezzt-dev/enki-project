@@ -393,6 +393,18 @@
         </Popup>
       </Panel>
     </DataTemplate>
+    <!-- Festivo en la Agenda: marca con el color de la capa del país, nombre y tipo (nacional, regional o
+         día especial). Sin interacción: un festivo no se edita, mueve ni borra. -->
+    <DataTemplate x:Key="CalendarHolidayRowTemplate" x:DataType="vm:CalendarHolidayViewModel">
+      <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,2" Background="Transparent" ToolTip.Tip="{Binding Tooltip}">
+        <Border Grid.Column="0" Classes="calendar-holiday-mark"
+                Background="{Binding ColorHex, Converter={StaticResource HexColorToBrushConverter}}" />
+        <TextBlock Grid.Column="1" Classes="calendar-holiday-label" FontSize="11.5" Text="{Binding Label}"
+                   Opacity="{Binding LabelOpacity}" />
+        <TextBlock Grid.Column="2" Classes="faint" FontSize="9.5" Margin="8,0,0,0" VerticalAlignment="Center"
+                   Text="{Binding KindLabel, Converter={StaticResource UpperCaseConverter}}" />
+      </Grid>
+    </DataTemplate>
   </UserControl.Resources>
 
   <Grid Margin="36,30,36,26">
@@ -475,9 +487,12 @@
               <DataTemplate x:DataType="vm:CalendarMiniDayViewModel">
                 <Button Classes="calendar-day" Classes.outside="{Binding !IsCurrentMonth}"
                         Classes.today="{Binding IsToday}" Classes.selected="{Binding IsSelected}"
+                        Classes.non-working="{Binding Holiday.IsNonWorkingDay}"
+                        ToolTip.Tip="{Binding Holiday.TooltipOrNull}"
                         Command="{Binding $parent[ItemsControl].((vm:CalendarViewModel)DataContext).SelectMiniDayCommand}"
                         CommandParameter="{Binding}"
-                        AutomationProperties.Name="{Binding Date, StringFormat={}{0:D}}">
+                        AutomationProperties.Name="{Binding Date, StringFormat={}{0:D}}"
+                        AutomationProperties.HelpText="{Binding Holiday.TooltipOrNull}">
                   <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="0">
                     <TextBlock Text="{Binding DayLabel}" HorizontalAlignment="Center" />
                     <Border Classes="calendar-mini-dot" IsVisible="{Binding HasItems}" />
@@ -614,6 +629,18 @@
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
             </Border>
+            <!-- Los países con festivos se eligen en Ajustes › Calendario; cada uno aparece arriba como
+                 una capa más (docs/calendar-feature/15-festivos-y-dias-no-laborables.md). -->
+            <Button Classes="ghost" HorizontalAlignment="Left" Padding="0"
+                    IsVisible="{Binding CanOpenHolidaySettings}"
+                    Command="{Binding OpenHolidaySettingsCommand}"
+                    AutomationProperties.Name="{loc:Tr Calendar_Sidebar_ManageHolidays}">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <mi:MaterialIcon Kind="CalendarStar" Width="12" Height="12" />
+                <TextBlock Text="{loc:Tr Calendar_Sidebar_ManageHolidays, Converter={StaticResource UpperCaseConverter}}"
+                           FontSize="9.5" />
+              </StackPanel>
+            </Button>
           </StackPanel>
         </StackPanel>
 
@@ -880,12 +907,17 @@
                             Classes.calendar-last-col="{Binding IsLastColumn}"
                             Classes.calendar-last-row="{Binding IsLastRow}">
                       <Grid>
+                        <!-- Fin de semana o festivo nacional: fondo aclarado bajo todo lo demás (no recibe
+                             clics, ver Border.calendar-nonworking-fill en Styles.axaml). -->
+                        <Border Classes="calendar-nonworking-fill" IsVisible="{Binding Holiday.IsNonWorkingDay}" />
                         <!-- Capa de clic vacío — doc 05 §3: crea un item con la fecha de esta celda. Se
                              sienta por debajo del contenido real en el z-order de este Grid. -->
                         <Button Classes="calendar-cell-click-layer"
                                 Command="{Binding $parent[ItemsControl].((vm:CalendarViewModel)DataContext).OpenQuickCreateForDayCommand}"
                                 CommandParameter="{Binding Date}"
-                                AutomationProperties.Name="{Binding Date, StringFormat={}{0:D}}">
+                                ToolTip.Tip="{Binding Holiday.TooltipOrNull}"
+                                AutomationProperties.Name="{Binding Date, StringFormat={}{0:D}}"
+                                AutomationProperties.HelpText="{Binding Holiday.TooltipOrNull}">
                           <Button.ContextMenu>
                             <ContextMenu>
                               <MenuItem Header="{loc:Tr Calendar_ContextMenu_CreateKanbanHere, Converter={StaticResource UpperCaseConverter}}"
@@ -903,11 +935,24 @@
                         </Button>
 
                         <Grid RowDefinitions="Auto,*" Margin="6">
-                          <Border Grid.Row="0" Classes="calendar-day-badge" Classes.today="{Binding IsToday}"
-                                  Classes.selected="{Binding IsSelected}" HorizontalAlignment="Left">
-                            <TextBlock Text="{Binding DayLabel}" Classes="calendar-day-number"
-                                       Classes.today="{Binding IsToday}" Classes.outside="{Binding !IsCurrentMonth}" />
-                     </Border>
+                          <Grid Grid.Row="0" ColumnDefinitions="Auto,*">
+                            <Border Grid.Column="0" Classes="calendar-day-badge" Classes.today="{Binding IsToday}"
+                                    Classes.selected="{Binding IsSelected}" HorizontalAlignment="Left">
+                              <TextBlock Text="{Binding DayLabel}" Classes="calendar-day-number"
+                                         Classes.today="{Binding IsToday}" Classes.outside="{Binding !IsCurrentMonth}" />
+                            </Border>
+                            <!-- Festivo principal del día (+N si hay más); la lista completa sale en la
+                                 descripción emergente de la casilla. Sin clics: pasan a la capa de debajo. -->
+                            <Grid Grid.Column="1" ColumnDefinitions="Auto,*,Auto" Margin="6,0,0,0"
+                                  IsHitTestVisible="False" IsVisible="{Binding Holiday.HasHolidays}">
+                              <Border Grid.Column="0" Classes="calendar-holiday-mark"
+                                      Background="{Binding Holiday.PrimaryColorHex, Converter={StaticResource HexColorToBrushConverter}}" />
+                              <TextBlock Grid.Column="1" Classes="calendar-holiday-label" Text="{Binding Holiday.PrimaryLabel}"
+                                         Opacity="{Binding Holiday.PrimaryLabelOpacity}" />
+                              <TextBlock Grid.Column="2" Classes="faint" FontSize="9" Margin="4,0,0,0" VerticalAlignment="Center"
+                                         Text="{Binding Holiday.ExtraCountLabel}" IsVisible="{Binding Holiday.HasExtraHolidays}" />
+                            </Grid>
+                          </Grid>
 
                           <StackPanel Grid.Row="1" Spacing="2" Margin="0,4,0,0">
                             <ItemsControl ItemsSource="{Binding VisibleItems}" ItemTemplate="{StaticResource CalendarChipTemplate}" />
@@ -953,9 +998,22 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:CalendarWeekColumnViewModel">
-                    <Border Classes="calendar-week-header" Classes.today="{Binding IsToday}">
-                      <TextBlock Text="{Binding DayLabel}" Classes="eyebrow calendar-week-header-label"
-                                 Classes.today="{Binding IsToday}" FontSize="11.5" HorizontalAlignment="Center" />
+                    <Border Classes="calendar-week-header" Classes.today="{Binding IsToday}"
+                            Classes.non-working="{Binding Holiday.IsNonWorkingDay}"
+                            ToolTip.Tip="{Binding Holiday.TooltipOrNull}">
+                      <StackPanel Spacing="3">
+                        <TextBlock Text="{Binding DayLabel}" Classes="eyebrow calendar-week-header-label"
+                                   Classes.today="{Binding IsToday}" FontSize="11.5" HorizontalAlignment="Center" />
+                        <Grid ColumnDefinitions="Auto,Auto,Auto" HorizontalAlignment="Center" Margin="6,0"
+                              IsVisible="{Binding Holiday.HasHolidays}">
+                          <Border Grid.Column="0" Classes="calendar-holiday-mark"
+                                  Background="{Binding Holiday.PrimaryColorHex, Converter={StaticResource HexColorToBrushConverter}}" />
+                          <TextBlock Grid.Column="1" Classes="calendar-holiday-label" Text="{Binding Holiday.PrimaryLabel}"
+                                     Opacity="{Binding Holiday.PrimaryLabelOpacity}" />
+                          <TextBlock Grid.Column="2" Classes="faint" FontSize="9" Margin="4,0,0,0" VerticalAlignment="Center"
+                                     Text="{Binding Holiday.ExtraCountLabel}" IsVisible="{Binding Holiday.HasExtraHolidays}" />
+                        </Grid>
+                      </StackPanel>
                </Border>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
@@ -976,6 +1034,7 @@
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:CalendarWeekColumnViewModel">
                     <Border Classes="calendar-week-column" Padding="4,0" MinHeight="20"
+                            Classes.non-working="{Binding Holiday.IsNonWorkingDay}"
                             PointerPressed="AllDayColumn_PointerPressed">
                       <Border.ContextMenu>
                         <ContextMenu>
@@ -1025,7 +1084,8 @@
                   </ItemsControl.ItemsPanel>
                   <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:CalendarWeekColumnViewModel">
-                      <Border Classes="calendar-week-column calendar-time-column">
+                      <Border Classes="calendar-week-column calendar-time-column"
+                              Classes.non-working="{Binding Holiday.IsNonWorkingDay}">
                         <Grid>
                           <ItemsControl ItemsSource="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).HourRows}">
                             <ItemsControl.ItemsPanel>
@@ -1075,6 +1135,8 @@
                     <StackPanel Spacing="8">
                       <TextBlock Text="{Binding HeaderLabel}" Classes="eyebrow" />
                       <Rectangle Height="1" Fill="{DynamicResource Ink10}" Margin="0,0,0,4" />
+                      <ItemsControl ItemsSource="{Binding Holidays}" ItemTemplate="{StaticResource CalendarHolidayRowTemplate}"
+                                    IsVisible="{Binding HasHolidays}" />
                       <ItemsControl ItemsSource="{Binding Items}" ItemTemplate="{StaticResource CalendarAgendaItemTemplate}" />
                     </StackPanel>
                     </Border>

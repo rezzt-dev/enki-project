@@ -160,4 +160,8 @@ public sealed class CalendarLayerColorService(
     }
 
     public bool HasCustomColor(string colorKey) => CustomColor(NormalizeColorKey(colorKey)) is not null;
+
+    /// <summary>Color elegido a mano para una capa que no reparte <see cref="BuildMap"/> (los festivos de
+    /// cada país, que no son columnas ni listas), o <paramref name="defaultHex"/> si no hay ninguno.</summary>
+    public string ResolveOrDefault(string colorKey, string defaultHex) => CustomColor(colorKey) ?? defaultHex;
 }

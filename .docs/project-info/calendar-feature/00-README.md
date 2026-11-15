@@ -41,6 +41,8 @@ documento y otro agente (u otra sesión del mismo) continúe desde el siguiente 
 | 11 | [11-arquitectura-tecnica.md](11-arquitectura-tecnica.md) | Modelos, servicios, viewmodels, vistas, eventos de cambio, huecos que hay que rellenar en servicios existentes. | Técnico |
 | 12 | [12-plan-de-implementacion-por-fases.md](12-plan-de-implementacion-por-fases.md) | Roadmap en bloques entregables de forma independiente (Fase 0 → Fase 6), cada uno con criterio de "hecho". | Roadmap |
 | 13 | [13-pruebas-y-checklist-de-calidad.md](13-pruebas-y-checklist-de-calidad.md) | Plan de pruebas xUnit, checklist manual de QA, casos límite (zonas horarias, todo-el-día, Polar desvinculado). | QA |
+| 14 | [14-suscripciones-externas-solo-lectura.md](14-suscripciones-externas-solo-lectura.md) | Calendarios iCalendar de solo lectura como capas. | Funcionalidad |
+| 15 | [15-festivos-y-dias-no-laborables.md](15-festivos-y-dias-no-laborables.md) | Festivos de la UE, Latinoamérica, EE. UU. y Reino Unido sin red; días no laborables con fondo más claro y una capa por país. | Funcionalidad |
 
 ## Decisiones de diseño ya tomadas (no reabrir sin motivo)
 
