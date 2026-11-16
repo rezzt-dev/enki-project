@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -100,10 +101,69 @@ public sealed partial class SessionsViewModel
     }
 
     partial void OnGraphSearchTextChanged(string value) => OnGraphFilterToggled();
-    partial void OnShowGraphMeshChanged(bool value) => GraphDisplayChanged?.Invoke();
-    partial void OnShowGraphLabelsChanged(bool value) => GraphDisplayChanged?.Invoke();
-    partial void OnGraphNodeSizeChanged(double value) => GraphDisplayChanged?.Invoke();
-    partial void OnGraphLinkThicknessChanged(double value) => GraphDisplayChanged?.Invoke();
+    partial void OnShowGraphMeshChanged(bool value) => OnGraphDisplayChanged();
+    partial void OnShowGraphLabelsChanged(bool value) => OnGraphDisplayChanged();
+    partial void OnGraphNodeSizeChanged(double value) => OnGraphDisplayChanged();
+    partial void OnGraphLinkThicknessChanged(double value) => OnGraphDisplayChanged();
+
+    private void OnGraphDisplayChanged()
+    {
+        GraphDisplayChanged?.Invoke();
+        SaveGraphViewState();
+    }
+
+    // Estado restaurado de ajustes; se aplica al reconstruir los filtros con el primer grafo cargado.
+    private HashSet<string> _persistedHiddenGroups = new(StringComparer.Ordinal);
+    private HashSet<string> _persistedTags = new(StringComparer.OrdinalIgnoreCase);
+    private string _persistedClusterId = string.Empty;
+    private bool _graphFiltersRestored;
+
+    /// <summary>Carga en los campos de respaldo (sin guardar de vuelta) lo guardado en ajustes.</summary>
+    private void RestoreGraphViewState()
+    {
+        if (_settingsService?.Settings is not { } s) return;
+        _restoringGraphViewState = true;
+        try { RestoreGraphViewStateCore(s); }
+        finally { _restoringGraphViewState = false; }
+    }
+
+    private bool _restoringGraphViewState;
+
+    private void RestoreGraphViewStateCore(AppSettings s)
+    {
+        GraphSearchText = s.SessionsGraphSearchText ?? string.Empty;
+        GraphExplorationIndex = Math.Clamp(s.SessionsGraphExplorationIndex, 0, 2);
+        ShowGraphMesh = s.SessionsGraphShowMesh;
+        ShowGraphLabels = s.SessionsGraphShowLabels;
+        GraphNodeSize = ValidScale(s.SessionsGraphNodeSize);
+        GraphLinkThickness = ValidScale(s.SessionsGraphLinkThickness);
+        _persistedHiddenGroups = new HashSet<string>(s.SessionsGraphHiddenGroups ?? [], StringComparer.Ordinal);
+        _persistedTags = new HashSet<string>(s.SessionsGraphSelectedTags ?? [], StringComparer.OrdinalIgnoreCase);
+        _persistedClusterId = s.SessionsGraphClusterId ?? string.Empty;
+    }
+
+    private static double ValidScale(double value) => double.IsFinite(value) && value > 0 ? value : 1;
+
+    private void SaveGraphViewState()
+    {
+        if (_settingsService is null || _restoringGraphViewState) return;
+        var s = _settingsService.Settings;
+        s.SessionsGraphSearchText = GraphSearchText;
+        s.SessionsGraphExplorationIndex = GraphExplorationIndex;
+        s.SessionsGraphShowMesh = ShowGraphMesh;
+        s.SessionsGraphShowLabels = ShowGraphLabels;
+        s.SessionsGraphNodeSize = GraphNodeSize;
+        s.SessionsGraphLinkThickness = GraphLinkThickness;
+        // Sin grafo cargado aún no se conocen los grupos, etiquetas ni clusters: se conserva lo guardado.
+        if (LastGraph is not null)
+        {
+            s.SessionsGraphHiddenGroups = GraphGroupFilters.Where(f => !f.IsActive).Select(f => f.GroupId).ToList();
+            s.SessionsGraphSelectedTags = GraphTagFilters.Where(f => f.IsActive).Select(f => f.GroupId).ToList();
+            s.SessionsGraphClusterId = SelectedGraphCluster?.Id ?? string.Empty;
+        }
+        try { _settingsService.Save(); }
+        catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException) { }
+    }
 
     [RelayCommand]
     private void FitGraph() => GraphCameraRequested?.Invoke("fit");
@@ -143,6 +203,12 @@ public sealed partial class SessionsViewModel
             var selectedTags = GraphTagFilters.Where(f => f.IsActive).Select(f => f.GroupId)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
             var selectedClusterId = SelectedGraphCluster?.Id;
+            if (!_graphFiltersRestored)
+            {
+                selectedTags.UnionWith(_persistedTags);
+                if (!string.IsNullOrEmpty(_persistedClusterId)) selectedClusterId = _persistedClusterId;
+                _graphFiltersRestored = true;
+            }
             GraphTagFilters.Clear();
             foreach (var tag in graph.Nodes.SelectMany(n => n.Tags).Distinct(StringComparer.OrdinalIgnoreCase)
                          .OrderBy(t => t, StringComparer.CurrentCultureIgnoreCase))

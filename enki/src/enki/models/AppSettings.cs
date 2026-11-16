@@ -335,6 +335,19 @@ public sealed class AppSettings
     /// la preferencia de movimiento reducido del sistema.</summary>
     public bool? SessionsGraphRotationEnabled { get; set; }
 
+    /// <summary>Filtros y opciones de visualización del grafo global de Sesiones, conservados entre arranques
+    /// (por vault, como el resto de preferencias). Los grupos se guardan como ocultos, de modo que una sesión
+    /// nueva aparece visible por defecto.</summary>
+    public string SessionsGraphSearchText { get; set; } = string.Empty;
+    public int SessionsGraphExplorationIndex { get; set; }
+    public string SessionsGraphClusterId { get; set; } = string.Empty;
+    public List<string> SessionsGraphHiddenGroups { get; set; } = [];
+    public List<string> SessionsGraphSelectedTags { get; set; } = [];
+    public bool SessionsGraphShowMesh { get; set; } = true;
+    public bool SessionsGraphShowLabels { get; set; } = true;
+    public double SessionsGraphNodeSize { get; set; } = 1;
+    public double SessionsGraphLinkThickness { get; set; } = 1;
+
     /// <summary>Estado de despliegue de cada bloque lateral del calendario, conservado entre arranques.</summary>
     public bool CalendarMiniCalendarExpanded { get; set; } = true;
     public bool CalendarLayersExpanded { get; set; }

@@ -303,6 +303,7 @@ public sealed partial class SessionsViewModel : ViewModelBase
         // Sin preferencia guardada, el perfil de movimiento sutil decide el estado inicial.
         _isGraphRotationEnabled = settingsService?.Settings.SessionsGraphRotationEnabled
             ?? !(settingsService?.Settings.UseSubtleAnimations ?? MotionService.UseSubtleAnimations);
+        RestoreGraphViewState();
         _vaultService = vaultService;
         _sessionService = sessionService;
         _notificationService = notificationService;
@@ -501,7 +502,8 @@ public sealed partial class SessionsViewModel : ViewModelBase
 
         foreach (var (groupId, name) in groups)
         {
-            var isActive = !previousSelection.TryGetValue(groupId, out var previouslyActive) || previouslyActive;
+            var isActive = previousSelection.TryGetValue(groupId, out var previouslyActive)
+                ? previouslyActive : !_persistedHiddenGroups.Contains(groupId);
             GraphGroupFilters.Add(new GraphGroupFilterItemViewModel(groupId, name, isActive, OnGraphFilterToggled,
                 graph.Nodes.Count(n => n.SessionId == groupId)));
         }
@@ -512,7 +514,8 @@ public sealed partial class SessionsViewModel : ViewModelBase
 
     private void OnGraphFilterToggled()
     {
-        if (_updatingGraphFilters) return;
+        if (_updatingGraphFilters || _restoringGraphViewState) return;
+        SaveGraphViewState();
         SetPendingLink(null);
         OnPropertyChanged(nameof(IsGraphFiltered));
         if (LastGraph is not null) PublishGraph(fullReload: false);

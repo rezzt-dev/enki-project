@@ -10,6 +10,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### CASTELLANO
 
 #### AÑADIDO
+- conservar entre arranques los filtros y la visualizacion del grafo global de sesiones (busqueda, explorar, grupo conectado, sesiones visibles, etiquetas, nombres de notas, malla, tamaño de nodos y grosor de enlaces) en `AppSettings`, por vault y sin que un reinicio los restablezca; las sesiones nuevas aparecen visibles
 - añadir festivos al calendario para los 27 paises de la union europea, latinoamerica, estados unidos y reino unido, calculados sin red en `services/holidays/` con traslados legales y dias sustitutivos
 - aclarar el fondo de los fines de semana y festivos nacionales en mes, semana, dia y mini-calendario, rotular festivos regionales y dias especiales y listarlos en la agenda
 - añadir la tarjeta `festivos y dias especiales` en `ajustes > calendario` con buscador de paises, pais sugerido por la region, una capa por pais y el enlace `gestionar festivos` en la barra lateral
@@ -308,6 +309,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 ### ENGLISH
 
 #### ADDED
+- keep the global sessions graph filters and display options (search, explore, connected group, visible sessions, tags, note names, mesh, node size and link thickness) across restarts in `AppSettings`, per vault, so a restart no longer resets them; new sessions appear visible
 - add calendar holidays for the 27 european union countries, latin america, the united states and the united kingdom, computed offline in `services/holidays/` with legal moves and substitute days
 - lighten weekends and national holidays in month, week, day and the mini calendar, label regional holidays and special days and list them in the agenda
 - add the `holidays and special days` card in `settings > calendar` with country search, a region-based suggestion, one layer per country and a `manage holidays` link in the sidebar
