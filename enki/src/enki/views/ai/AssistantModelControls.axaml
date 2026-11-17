@@ -14,41 +14,47 @@
        durante una respuesta: el cambio vale para el turno siguiente, nunca para el que está en curso. -->
   <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
     <ComboBox x:Name="ModelPicker" ItemsSource="{Binding ModelOptions}" SelectedItem="{Binding SelectedModel}"
-              Width="160" VerticalAlignment="Center" IsEnabled="{Binding !IsSending}"
+              Width="208" MinHeight="36" MaxDropDownHeight="320" VerticalAlignment="Center" IsEnabled="{Binding !IsSending}"
               ToolTip.Tip="{loc:Tr Assistant_Model_Tooltip}" AutomationProperties.Name="{loc:Tr Assistant_Model_Label}">
       <ComboBox.ItemTemplate>
         <DataTemplate DataType="vm:AiModelOption">
-          <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" />
+          <TextBlock Text="{Binding Label}" ToolTip.Tip="{Binding Label}" TextTrimming="CharacterEllipsis" />
         </DataTemplate>
       </ComboBox.ItemTemplate>
     </ComboBox>
-    <Button x:Name="EffortTrigger" Classes="date-picker-trigger" Padding="10,7"
+    <Button x:Name="EffortTrigger" Classes="date-picker-trigger ai-trigger" Classes.open="{Binding IsEffortPickerOpen}" Padding="10,7"
             Command="{Binding ToggleEffortPickerCommand}"
             ToolTip.Tip="{loc:Tr Assistant_Effort_Help}" AutomationProperties.Name="{loc:Tr Assistant_Effort_Title}">
-      <TextBlock Text="{Binding EffortSummary}" FontSize="12" />
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <TextBlock Text="{Binding EffortSummary}" FontSize="12" />
+        <mi:MaterialIcon Kind="ChevronDown" Width="12" Height="12" Foreground="{DynamicResource Ink50}" />
+      </StackPanel>
     </Button>
-    <Popup PlacementTarget="{Binding #EffortTrigger}" Placement="BottomEdgeAlignedRight" VerticalOffset="6"
+    <Popup x:Name="EffortPopup" PlacementTarget="{Binding #EffortTrigger}" Placement="BottomEdgeAlignedRight" VerticalOffset="6"
            IsLightDismissEnabled="True" OverlayInputPassThroughElement="{Binding #EffortTrigger}"
            controls:PopoverKeyboard.CloseOnEscape="True"
+           controls:PopoverViewport.Constrain="True"
            controls:SharedPopover.IsOpen="{Binding IsEffortPickerOpen, Mode=TwoWay}">
-      <Border Classes="dropdown-popover" Width="260">
-        <StackPanel Spacing="10">
-          <TextBlock Text="{loc:Tr Assistant_Effort_Title}" Classes="eyebrow" />
-          <TextBlock Text="{Binding EffortLabel}" FontSize="13" />
-          <Slider x:Name="EffortSlider" Theme="{StaticResource RectangularSlider}"
-                  Minimum="0" Maximum="2" SmallChange="1" LargeChange="1" TickFrequency="1" IsSnapToTickEnabled="True"
-                  Value="{Binding EffortLevel, Mode=TwoWay}" IsEnabled="{Binding CanChangeEffort}"
-                  AutomationProperties.Name="{loc:Tr Assistant_Effort_Title}"
-                  AutomationProperties.HelpText="{Binding EffortLabel}" />
-          <Grid ColumnDefinitions="*,*,*">
-            <TextBlock Text="{loc:Tr Assistant_Effort_low}" Classes="faint" />
-            <TextBlock Grid.Column="1" Text="{loc:Tr Assistant_Effort_medium}" Classes="faint" HorizontalAlignment="Center" />
-            <TextBlock Grid.Column="2" Text="{loc:Tr Assistant_Effort_high}" Classes="faint" HorizontalAlignment="Right" />
-          </Grid>
-          <TextBlock Text="{loc:Tr Assistant_Effort_Help}" Classes="muted" TextWrapping="Wrap" FontSize="11" />
-          <TextBlock Text="{loc:Tr Assistant_Effort_Unavailable}" IsVisible="{Binding ShowEffortUnavailable}"
-                     Classes="muted" TextWrapping="Wrap" FontSize="11" />
-        </StackPanel>
+      <Border Classes="dropdown-popover ai-popover" Width="300">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+          <StackPanel Spacing="12">
+            <TextBlock Text="{loc:Tr Assistant_Effort_Title}" Classes="eyebrow" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding EffortLabel}" FontSize="13" />
+            <Slider x:Name="EffortSlider" Theme="{StaticResource RectangularSlider}"
+                    Minimum="0" Maximum="2" SmallChange="1" LargeChange="1" TickFrequency="1" IsSnapToTickEnabled="True"
+                    Value="{Binding EffortLevel, Mode=TwoWay}" IsEnabled="{Binding CanChangeEffort}"
+                    AutomationProperties.Name="{loc:Tr Assistant_Effort_Title}"
+                    AutomationProperties.HelpText="{Binding EffortLabel}" />
+            <Grid ColumnDefinitions="*,*,*">
+              <TextBlock Text="{loc:Tr Assistant_Effort_low}" Classes="muted" />
+              <TextBlock Grid.Column="1" Text="{loc:Tr Assistant_Effort_medium}" Classes="muted" HorizontalAlignment="Center" />
+              <TextBlock Grid.Column="2" Text="{loc:Tr Assistant_Effort_high}" Classes="muted" HorizontalAlignment="Right" />
+            </Grid>
+            <TextBlock Text="{loc:Tr Assistant_Effort_Help}" Classes="muted" TextWrapping="Wrap" FontSize="11" />
+            <TextBlock Text="{loc:Tr Assistant_Effort_Unavailable}" IsVisible="{Binding ShowEffortUnavailable}"
+                       Classes="muted" TextWrapping="Wrap" FontSize="11" />
+          </StackPanel>
+        </ScrollViewer>
       </Border>
     </Popup>
     <Button Classes="icon-btn" Command="{Binding OpenEvaluationCommand}"

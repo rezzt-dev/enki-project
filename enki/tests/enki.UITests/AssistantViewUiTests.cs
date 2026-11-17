@@ -666,7 +666,9 @@ public sealed class AssistantViewUiTests : IDisposable
             vm.AiEnabled = true;
             Dispatcher.UIThread.RunJobs();
             Assert.True(vm.IsAiConsentDialogOpen);
-            SavePreview(view, "settings-ai-consent", 1280, 1100);
+            var consent = Avalonia.LogicalTree.LogicalExtensions.GetLogicalDescendants(view).OfType<ModalOverlayHost>().Single(m => m.IsOpen);
+            var consentCard = (Border)consent.Content!;
+            SavePreview(consentCard, "settings-ai-consent", (int)Math.Ceiling(consentCard.Bounds.Width), (int)Math.Ceiling(consentCard.Bounds.Height));
             vm.AcceptAiConsentCommand.Execute(null);
             Pump(() => vm.AiCliStatus!.IsKnown && !vm.AiCliStatus.IsChecking);
             window.GetLayoutManager()!.ExecuteLayoutPass();
@@ -683,6 +685,32 @@ public sealed class AssistantViewUiTests : IDisposable
             Assert.True(vm.AiAllowReadAccessByDefault);
             Assert.True(settings.Settings.Ai.AllowReadAccessByDefault);
             SavePreview(view, "settings-ai-default-access", 1280, 1100);
+            var previousTheme = Application.Current!.RequestedThemeVariant;
+            var previousLanguage = LocalizationService.Instance.CurrentCulture.Name;
+            try
+            {
+                LocalizationService.Instance.SetLanguage("es-ES");
+                window.Width = 960;
+                window.Height = 720;
+                foreach (var light in new[] { false, true })
+                {
+                    Application.Current.RequestedThemeVariant = light ? Avalonia.Styling.ThemeVariant.Light : Avalonia.Styling.ThemeVariant.Dark;
+                    window.Background = new SolidColorBrush(light ? Color.Parse("#F5F5F5") : Color.Parse("#121212"));
+                    foreach (var key in new[] { "Settings_Ai_Persona_Title", "Ai_Provider", "Settings_Ai_Cli_Title", "Settings_Ai_Chat_Title", "Settings_Ai_Vault_Title", "Settings_Ai_Web_Engine_Label", "Settings_Ai_History_Title" })
+                    {
+                        vm.SearchText = LocalizationService.Instance[key];
+                        Dispatcher.UIThread.RunJobs();
+                        window.GetLayoutManager()!.ExecuteLayoutPass();
+                        SavePreview(view, $"{key}-{(light ? "light" : "dark")}", 960, 720);
+                    }
+                }
+            }
+            finally
+            {
+                Application.Current.RequestedThemeVariant = previousTheme;
+                LocalizationService.Instance.SetLanguage(previousLanguage);
+            }
+
         }
         finally
         {
@@ -1110,6 +1138,71 @@ public sealed class AssistantViewUiTests : IDisposable
         }
         finally { window.Close(); }
     }
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void HeaderPopovers_FitSmallWindows_RestoreConstraints_AndCloseWithEscape(bool light)
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var theme = Application.Current!.RequestedThemeVariant;
+        var language = LocalizationService.Instance.CurrentCulture.Name;
+        var (view, vm, window, _) = Create(FakeCli(loggedIn: true));
+        try
+        {
+            LocalizationService.Instance.SetLanguage("es-ES");
+            Application.Current.RequestedThemeVariant = light ? Avalonia.Styling.ThemeVariant.Light : Avalonia.Styling.ThemeVariant.Dark;
+            window.Width = 760;
+            window.Height = 540;
+            vm.ToggleHistoryCommand.Execute(null);
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            SavePreview(view, $"assistant-header-{(light ? "light" : "dark")}-760", 760, 540);
+            foreach (var (triggerName, popupName) in new[]
+            {
+                ("PersonaTrigger", "PersonaPopup"), ("ScopeTrigger", "ScopePopup"), ("EffortTrigger", "EffortPopup")
+            })
+            {
+                var trigger = Find<Button>(view, triggerName);
+                var popup = Find<Popup>(view, popupName);
+                var card = (Border)popup.Child!;
+                var originalHeight = card.MaxHeight;
+                Assert.True(trigger.IsEffectivelyVisible);
+                Assert.True(trigger.Bounds.Height >= 36);
+                trigger.Command!.Execute(null);
+                Pump(() => popup.IsOpen);
+                window.GetLayoutManager()!.ExecuteLayoutPass();
+                Assert.True(popup.IsOpen);
+                Assert.True(card.Bounds.Width <= window.Bounds.Width - 32);
+                Assert.True(card.Bounds.Height <= window.Bounds.Height - 32);
+                SavePreview(card, $"{popupName}-{(light ? "light" : "dark")}", (int)Math.Ceiling(card.Bounds.Width), (int)Math.Ceiling(card.Bounds.Height));
+
+                window.Height = 380;
+                window.Width = 320;
+                Dispatcher.UIThread.RunJobs();
+                window.GetLayoutManager()!.ExecuteLayoutPass();
+                Assert.True(card.MaxHeight <= 348);
+                Assert.True(card.MaxWidth <= 288);
+                card.RaiseEvent(new Avalonia.Input.KeyEventArgs
+                {
+                    RoutedEvent = Avalonia.Input.InputElement.KeyDownEvent, Key = Avalonia.Input.Key.Escape
+                });
+                Dispatcher.UIThread.RunJobs();
+                Assert.False(popup.IsOpen);
+                Assert.Equal(originalHeight, card.MaxHeight);
+                Assert.True(trigger.IsFocused);
+                window.Height = 540;
+                window.Width = 760;
+            }
+        }
+        finally
+        {
+            vm.CancelAll();
+            window.Close();
+            Application.Current.RequestedThemeVariant = theme;
+            LocalizationService.Instance.SetLanguage(language);
+        }
+    }
+
     [Fact]
     public void EvaluationDialog_ShowsLocalOnlyNotice_AndDisablesUnavailableActions()
     {
@@ -1129,6 +1222,19 @@ public sealed class AssistantViewUiTests : IDisposable
             Assert.Empty(vm.EvaluationResults);
             Assert.False(vm.IsEvaluating);
             var card = (Border)dialogs.FindControl<ModalOverlayHost>("EvaluationModal")!.Content!;
+            window.Width = 640;
+            window.Height = 380;
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            Assert.True(card.Bounds.Height <= 348);
+            var close = card.GetVisualDescendants().OfType<Button>().Single(b => b.Classes.Contains("modal-cancel"));
+            Assert.True(close.IsEffectivelyVisible);
+            var run = dialogs.FindControl<Button>("EvaluationRunButton")!;
+            Assert.True(run.TranslatePoint(new Point(0, run.Bounds.Height), card)!.Value.Y <= card.Bounds.Height);
+            SavePreview(card, "assistant-evaluation-small", (int)Math.Ceiling(card.Bounds.Width), (int)Math.Ceiling(card.Bounds.Height));
+            window.Height = 860;
+            Dispatcher.UIThread.RunJobs();
+            window.GetLayoutManager()!.ExecuteLayoutPass();
             card.Measure(new Size(640, 720));
             card.Arrange(new Rect(0, 0, 640, 720));
             Assert.Contains(LocalizationService.Instance["Assistant_Evaluation_Help"],

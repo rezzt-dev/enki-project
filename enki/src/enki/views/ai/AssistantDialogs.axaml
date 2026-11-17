@@ -15,30 +15,50 @@
   <!-- Diálogos del asistente, compartidos por la sección y el panel. ModalOverlayHost los ancla a la ventana,
        así que cubren toda la aplicación aunque los abra el panel estrecho. -->
   <Panel>
-    <controls:ModalOverlayHost x:Name="EvaluationModal" IsOpen="{Binding IsEvaluationOpen}">
+    <controls:ModalOverlayHost ConstrainContent="True" x:Name="EvaluationModal" IsOpen="{Binding IsEvaluationOpen}">
       <Border Classes="modal-card" MaxWidth="640" HorizontalAlignment="Center" VerticalAlignment="Center">
-        <StackPanel Spacing="16">
-          <TextBlock Text="{loc:Tr Assistant_Evaluation_Title, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
-          <TextBlock Text="{loc:Tr Assistant_Evaluation_Help}" TextWrapping="Wrap" />
-          <TextBlock Text="{loc:Tr Assistant_Evaluation_Metrics}" Classes="muted" TextWrapping="Wrap" />
-          <TextBlock Text="{Binding EvaluationStatus}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
-          <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsEvaluating}" Height="3" />
-          <TextBlock Text="{loc:Tr Assistant_Evaluation_Empty}" IsVisible="{Binding !HasEvaluationResults}" Classes="muted" />
-          <ScrollViewer MaxHeight="280">
-            <ItemsControl ItemsSource="{Binding EvaluationResults}">
-              <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="x:String">
-                  <TextBlock Text="{Binding}" TextWrapping="Wrap" Margin="0,8" FontSize="12" />
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
+        <Grid RowDefinitions="Auto,*,Auto" RowSpacing="20">
+          <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+            <mi:MaterialIcon Kind="ChartBoxOutline" Width="20" Height="20" Foreground="{DynamicResource Ink70}" />
+            <TextBlock Grid.Column="1" Text="{loc:Tr Assistant_Evaluation_Title, Converter={StaticResource UpperCaseConverter}}"
+                       Classes="section-title" TextWrapping="Wrap" />
+            <Button Grid.Column="2" Classes="icon-btn modal-cancel" Command="{Binding CloseEvaluationCommand}"
+                    AutomationProperties.Name="{loc:Tr Common_Close}" ToolTip.Tip="{loc:Tr Common_Close}">
+              <mi:MaterialIcon Kind="Close" Width="16" Height="16" />
+            </Button>
+          </Grid>
+          <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" MaxHeight="420">
+            <StackPanel Spacing="16">
+              <TextBlock Text="{loc:Tr Assistant_Evaluation_Help}" TextWrapping="Wrap" FontSize="13" />
+              <Border Classes="trash-hint">
+                <TextBlock Text="{loc:Tr Assistant_Evaluation_Metrics}" Classes="muted" TextWrapping="Wrap" FontSize="12" />
+              </Border>
+              <TextBlock Text="{Binding EvaluationStatus}" TextWrapping="Wrap" FontSize="12"
+                         IsVisible="{Binding EvaluationStatus, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}"
+                         AutomationProperties.LiveSetting="Polite" />
+              <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsEvaluating}" Height="3" />
+              <Border Classes="card" Padding="20" IsVisible="{Binding !HasEvaluationResults}">
+                <StackPanel Spacing="10">
+                  <mi:MaterialIcon Kind="ChartBoxOutline" Width="24" Height="24" Foreground="{DynamicResource Ink50}" HorizontalAlignment="Left" />
+                  <TextBlock Text="{loc:Tr Assistant_Evaluation_Empty}" Classes="muted" TextWrapping="Wrap" FontSize="12" />
+                </StackPanel>
+              </Border>
+              <ItemsControl ItemsSource="{Binding EvaluationResults}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="x:String">
+                    <Border BorderBrush="{DynamicResource Ink10}" BorderThickness="0,0,0,1" Padding="0,12">
+                      <TextBlock Text="{Binding}" TextWrapping="Wrap" FontSize="12" FontFamily="{DynamicResource MonoFontFamily}" />
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
           </ScrollViewer>
-          <WrapPanel ItemSpacing="12" LineSpacing="8">
+          <WrapPanel Grid.Row="2" ItemSpacing="12" LineSpacing="8">
             <Button x:Name="EvaluationRunButton" Classes="pill-primary" Command="{Binding RunEvaluationCommand}" Content="{loc:Tr Assistant_Evaluation_Run, Converter={StaticResource UpperCaseConverter}}" />
             <Button x:Name="EvaluationClearButton" Classes="ghost" Command="{Binding ClearEvaluationsCommand}" Content="{loc:Tr Assistant_Evaluation_Clear, Converter={StaticResource UpperCaseConverter}}" />
-            <Button Classes="ghost modal-cancel" Command="{Binding CloseEvaluationCommand}" Content="{loc:Tr Common_Close, Converter={StaticResource UpperCaseConverter}}" />
           </WrapPanel>
-        </StackPanel>
+        </Grid>
       </Border>
     </controls:ModalOverlayHost>
     <!-- · Borrar una conversación · -->

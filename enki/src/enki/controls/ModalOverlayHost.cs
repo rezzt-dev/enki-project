@@ -28,6 +28,18 @@ public sealed class ModalOverlayHost : ContentControl
         set => SetValue(IsOpenProperty, value);
     }
 
+    /// <summary>Restringe la tarjeta al área visible de la ventana. Su cuerpo debe permitir desplazamiento.</summary>
+    public static readonly StyledProperty<bool> ConstrainContentProperty =
+        AvaloniaProperty.Register<ModalOverlayHost, bool>(nameof(ConstrainContent));
+
+    public bool ConstrainContent
+    {
+        get => GetValue(ConstrainContentProperty);
+        set => SetValue(ConstrainContentProperty, value);
+    }
+
+    private double? _contentMaxWidth;
+    private double? _contentMaxHeight;
     private Popup? _popup;
     private TopLevel? _topLevel;
     private IDisposable? _boundsSubscription;
@@ -77,5 +89,12 @@ public sealed class ModalOverlayHost : ContentControl
 
         _popup.Width = _topLevel.Bounds.Width;
         _popup.Height = _topLevel.Bounds.Height;
+        if (ConstrainContent && Content is Control card)
+        {
+            _contentMaxWidth ??= card.MaxWidth;
+            _contentMaxHeight ??= card.MaxHeight;
+            card.MaxWidth = Math.Min(_contentMaxWidth.Value, Math.Max(1, _topLevel.Bounds.Width - 32));
+            card.MaxHeight = Math.Min(_contentMaxHeight.Value, Math.Max(1, _topLevel.Bounds.Height - 32));
+        }
     }
 }

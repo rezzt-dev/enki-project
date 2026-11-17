@@ -153,6 +153,10 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - pruebas `ModuleProfileCatalogTests` y `HighContrastThemeTests`, guía `.docs/project-info/accesibilidad-y-alto-contraste.md` con el procedimiento de prueba con Orca, NVDA y VoiceOver (aún sin ejecutar) y `.docs/project-info/politica-de-firma-y-ci-multiplataforma.md` con la política de firma y notarización.
 
 #### CAMBIOS
+- corregir el estilo compartido `Button.ghost` para mostrar las acciones secundarias con contorno rectangular, espacio interior y foco visible; conservar su forma al desactivarlas y evitar el fondo de fluent pegado al texto
+- pulir los ajustes de inteligencia artificial y la cabecera del asistente: ayudas legibles, campos y acciones ordenados, modelo mas ancho, foco visible y popups de personalidad, ambito y esfuerzo adaptados a la ventana; mejorar evaluacion y confirmaciones con contenido desplazable y acciones accesibles
+- ajustar las acciones compactas de calendario, kanban, filtros y avisos para conservar el contorno sin desplazar el contenido ni perder el area pulsable
+- añadir pruebas de estados de botones, popups de ia y expansion de etiquetas, y documentar el inventario y las decisiones visuales en `.docs/agent-docs/`
 - documentar el centrado vertical y optico y su comprobacion con renderizado real en `.docs/project-info/sistema-diseno-web.md`
 - ampliar las pruebas, actualizar `.docs/project-info/asistente-ia.md` y el indice del analisis, y añadir textos en los siete idiomas de la interfaz
 - sustituir `read_text_file` y `AiTextFiles` por `read_file` y `AiFileReader`, enviar las imagenes como contenido mcp a cada proveedor y mostrar en el selector de adjuntos un icono por formato y motivos traducidos
@@ -452,6 +456,10 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - `ModuleProfileCatalogTests` and `HighContrastThemeTests`, the `.docs/project-info/accesibilidad-y-alto-contraste.md` guide with the Orca, NVDA and VoiceOver test procedure (not yet run) and `.docs/project-info/politica-de-firma-y-ci-multiplataforma.md` with the signing and notarization policy.
 
 #### CHANGED
+- fix the shared `Button.ghost` style so secondary actions have a rectangular outline, inner spacing and visible focus; preserve their shape when disabled and prevent fluent backgrounds from hugging the label
+- polish artificial intelligence settings and the assistant header: readable hints, organised fields and actions, wider model picker, visible focus and personality, scope and effort popups that fit the window; improve evaluation and confirmations with scrollable content and accessible actions
+- adjust compact actions in the calendar, kanban, filters and notifications so their outline stays intact without shifting content or reducing the hit area
+- add button-state, ai-popup and tag-expansion tests, and document the visual inventory and decisions in `.docs/agent-docs/`
 - document vertical and optical centering and its verification with real rendering in `.docs/project-info/sistema-diseno-web.md`
 - expand tests, update `.docs/project-info/asistente-ia.md` and the analysis index, and add text in all seven interface languages
 - replace `read_text_file` and `AiTextFiles` with `read_file` and `AiFileReader`, send images as mcp content to each provider and show a per-format icon and translated reasons in the attachment picker

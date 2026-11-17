@@ -691,12 +691,16 @@
     <Setter Property="Opacity" Value="0.7" />
   </Style>
 
-  <!-- Ghost / texto -->
+  <!-- Botón secundario: conserva el nombre ghost en las vistas, con un contorno discreto y
+       espacio interior para que la acción se reconozca como botón también cuando está desactivada. -->
   <Style Selector="Button.ghost">
     <Setter Property="Background" Value="Transparent" />
-    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink30}" />
+    <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="0" />
-    <Setter Property="Padding" Value="0" />
+    <Setter Property="Padding" Value="14,8" />
+    <Setter Property="MinHeight" Value="36" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
     <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
     <Setter Property="FontSize" Value="11" />
     <Setter Property="FontWeight" Value="Bold" />
@@ -705,26 +709,41 @@
     <Setter Property="Transitions">
       <Transitions>
         <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
+        <BrushTransition Property="BorderBrush" Duration="{DynamicResource MotionInteractionDuration}" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
   </Style>
   <Style Selector="Button.ghost TextBlock">
-    <Setter Property="LetterSpacing" Value="2" />
+    <Setter Property="LetterSpacing" Value="1.5" />
   </Style>
-  <Style Selector="Button.ghost:pointerover">
-    <Setter Property="Opacity" Value="0.6" />
+  <Style Selector="Button.ghost:pointerover, Button.ghost:focus-visible">
+    <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
   </Style>
   <Style Selector="Button.ghost:pressed">
-    <Setter Property="Opacity" Value="0.4" />
+    <Setter Property="Opacity" Value="0.8" />
+  </Style>
+  <!-- Fluent no debe añadir un relleno detrás de la etiqueta al desactivar el botón. La opacidad
+       se aplica al control entero, manteniendo texto, contorno y área interior como una unidad. -->
+  <Style Selector="Button.ghost:disabled">
+    <Setter Property="Opacity" Value="0.45" />
+    <Setter Property="Cursor" Value="Arrow" />
+  </Style>
+  <Style Selector="Button.ghost:disabled /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink30}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+  </Style>
+  <Style Selector="Button.ghost:disabled TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+  </Style>
+  <Style Selector="Button.ghost:disabled mi|MaterialIcon">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
   </Style>
 
-  <!-- Ghost usado como "Cancelar" junto a un pill-primary/pill-primary-danger en un modal (§7.10):
-       mismo padding y grosor de borde (transparente) que su pareja, para que ambos botones midan
-       igual pese a que el cancelar siga siendo texto plano sin relleno. -->
+  <!-- Cancelar mantiene las dimensiones de la acción principal y el contorno del secundario. -->
   <Style Selector="Button.ghost.modal-cancel">
     <Setter Property="Padding" Value="18,10" />
     <Setter Property="BorderThickness" Value="1.5" />
-    <Setter Property="BorderBrush" Value="Transparent" />
   </Style>
 
   <!-- ===================== Segmented control (RadioButton, GroupName) ===================== -->
@@ -2940,6 +2959,29 @@
     <Setter Property="Height" Value="7" />
     <Setter Property="Fill" Value="{DynamicResource DangerBrush}" />
     <Setter Property="IsHitTestVisible" Value="False" />
+  </Style>
+
+  <!-- Ajustes y controles de IA: misma geometría y recursos que el resto de Enki. -->
+  <Style Selector="StackPanel.ai-settings TextBlock">
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <Style Selector="StackPanel.ai-settings TextBox">
+    <Setter Property="MinHeight" Value="36" />
+  </Style>
+  <Style Selector="StackPanel.ai-settings Button">
+    <Setter Property="MinHeight" Value="32" />
+  </Style>
+  <Style Selector="Border.ai-popover TextBlock.faint">
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+  </Style>
+  <Style Selector="Button.ai-trigger">
+    <Setter Property="MinHeight" Value="36" />
+  </Style>
+  <Style Selector="Button.ai-trigger:focus-visible, Button.ai-trigger.open">
+    <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+  </Style>
+  <Style Selector="Button.dropdown-item.ai-scope-selected">
+    <Setter Property="Background" Value="{DynamicResource Ink10}" />
   </Style>
 
 </Styles>

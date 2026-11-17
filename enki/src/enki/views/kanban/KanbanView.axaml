@@ -118,7 +118,7 @@
           <!-- Prioridad (clic para rotar Baja → Media → Alta) + acciones de la tarjeta.
                La etiqueta muestra siempre la prioridad actual junto al indicador. -->
           <Grid ColumnDefinitions="Auto,*,Auto" MinHeight="24">
-            <Button Grid.Column="0" Classes="ghost" Padding="2,0" VerticalAlignment="Center"
+            <Button Grid.Column="0" Classes="ghost" MinHeight="24" Padding="8,0" VerticalAlignment="Center"
                     Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).CyclePriorityCommand}"
                     CommandParameter="{Binding}"
                     ToolTip.Tip="{Binding PriorityTooltip}" AutomationProperties.Name="{Binding PriorityTooltip}">
@@ -710,7 +710,7 @@
               <!-- Prioridad (clic para rotar Baja → Media → Alta) + acciones de la tarjeta.
                    La etiqueta muestra siempre la prioridad actual junto al indicador. -->
               <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" MinHeight="24">
-                <Button Grid.Column="0" Classes="ghost" Padding="2,0" VerticalAlignment="Center"
+                <Button Grid.Column="0" Classes="ghost" MinHeight="24" Padding="8,0" VerticalAlignment="Center"
                         Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).CyclePriorityCommand}"
                         CommandParameter="{Binding}"
                         ToolTip.Tip="{Binding PriorityTooltip}" AutomationProperties.Name="{Binding PriorityTooltip}">
@@ -1359,23 +1359,23 @@
       <Grid x:Name="KanbanListView" Grid.Row="5" RowDefinitions="Auto,*" IsVisible="{Binding IsListLayout}">
         <Border Grid.Row="0" Classes="kanban-column-header">
           <Grid ColumnDefinitions="3*,*,*,*,Auto" ColumnSpacing="12">
-            <Button Grid.Column="0" Classes="ghost" HorizontalAlignment="Left" Padding="0"
+            <Button Grid.Column="0" Classes="ghost" HorizontalAlignment="Left" Padding="8,4"
                     Command="{Binding SortListCommand}" CommandParameter="{x:Static vm:KanbanListSortColumn.Title}">
               <TextBlock Text="{loc:Tr Kanban_List_ColumnTitle, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
             </Button>
-            <Button Grid.Column="1" Classes="ghost" HorizontalAlignment="Left" Padding="0"
+            <Button Grid.Column="1" Classes="ghost" HorizontalAlignment="Left" Padding="8,4"
                     Command="{Binding SortListCommand}" CommandParameter="{x:Static vm:KanbanListSortColumn.Column}">
               <TextBlock Text="{loc:Tr Kanban_List_ColumnStatus, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
             </Button>
-            <Button Grid.Column="2" Classes="ghost" HorizontalAlignment="Left" Padding="0"
+            <Button Grid.Column="2" Classes="ghost" HorizontalAlignment="Left" Padding="8,4"
                     Command="{Binding SortListCommand}" CommandParameter="{x:Static vm:KanbanListSortColumn.Priority}">
               <TextBlock Text="{loc:Tr Kanban_List_ColumnPriority, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
             </Button>
-            <Button Grid.Column="3" Classes="ghost" HorizontalAlignment="Left" Padding="0"
+            <Button Grid.Column="3" Classes="ghost" HorizontalAlignment="Left" Padding="8,4"
                     Command="{Binding SortListCommand}" CommandParameter="{x:Static vm:KanbanListSortColumn.DueDate}">
               <TextBlock Text="{loc:Tr Kanban_List_ColumnDue, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" />
             </Button>
-            <Button Grid.Column="4" Classes="ghost" HorizontalAlignment="Left" Padding="0"
+            <Button Grid.Column="4" Classes="ghost" HorizontalAlignment="Left" Padding="8,4"
                     Command="{Binding SortListCommand}" CommandParameter="{x:Static vm:KanbanListSortColumn.Blocked}"
                     ToolTip.Tip="{loc:Tr Kanban_List_ColumnBlockedTooltip}" AutomationProperties.Name="{loc:Tr Kanban_List_ColumnBlockedTooltip}">
               <mi:MaterialIcon Kind="LockOutline" Width="14" Height="14" />
@@ -2458,7 +2458,7 @@
                   <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="vm:KanbanLinkItemViewModel">
                       <Grid ColumnDefinitions="*,Auto">
-                        <Button Grid.Column="0" Classes="ghost" Padding="0" HorizontalAlignment="Left"
+                        <Button Grid.Column="0" Classes="ghost" Padding="8,4" HorizontalAlignment="Left"
                                 Command="{Binding OpenCommand}"
                                 ToolTip.Tip="{Binding Url}" AutomationProperties.Name="{loc:Tr Kanban_Links_OpenTooltip}">
                           <StackPanel Orientation="Horizontal" Spacing="8">
@@ -2685,7 +2685,7 @@
 
               <StackPanel Spacing="6" IsVisible="{Binding HasLinkedNote}">
                 <TextBlock Text="{loc:Tr Kanban_Field_LinkedNoteLabel, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
-                <Button Classes="ghost" HorizontalAlignment="Left" Padding="0" Command="{Binding OpenLinkedNoteCommand}"
+                <Button Classes="ghost" HorizontalAlignment="Left" Padding="8,4" Command="{Binding OpenLinkedNoteCommand}"
                         ToolTip.Tip="{Binding LinkedNoteTooltip}">
                   <StackPanel Orientation="Horizontal" Spacing="6">
                     <mi:MaterialIcon Kind="{Binding LinkedNoteIcon}" Width="13" Height="13" Foreground="{DynamicResource Ink40}" />
@@ -2705,7 +2705,7 @@
                   </ItemsControl.ItemsPanel>
                   <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="vm:KanbanLinkItemViewModel">
-                      <Button Classes="ghost" HorizontalAlignment="Left" Padding="0" Command="{Binding OpenCommand}"
+                      <Button Classes="ghost" HorizontalAlignment="Left" Padding="8,4" Command="{Binding OpenCommand}"
                               ToolTip.Tip="{Binding Url}" AutomationProperties.Name="{loc:Tr Kanban_Links_OpenTooltip}">
                         <StackPanel Orientation="Horizontal" Spacing="6">
                           <mi:MaterialIcon Kind="LinkVariant" Width="13" Height="13" Foreground="{DynamicResource Ink40}" />
@@ -2777,7 +2777,7 @@
                separado del par cerrar/editar, para que no se pulse por inercia. -->
           <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,18,0,0">
             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="20" VerticalAlignment="Center">
-              <Button Classes="ghost" Padding="0" VerticalAlignment="Center"
+              <Button Classes="ghost" Padding="8,4" VerticalAlignment="Center"
                       Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).DeleteCardFromDetailCommand}"
                       ToolTip.Tip="{loc:Tr Kanban_Detail_DeleteTooltip}" AutomationProperties.Name="{loc:Tr Kanban_Detail_DeleteTooltip}">
                 <StackPanel Orientation="Horizontal" Spacing="7">
@@ -2791,7 +2791,7 @@
               <!-- Archivar/desarchivar viven aquí por el mismo motivo que editar y eliminar: en el tablero
                    solo se llega a ellas con el clic derecho, y este diálogo es la vía que no depende de
                    ningún gesto oculto. Solo una de las dos puede verse a la vez. -->
-              <Button Classes="ghost" Padding="0" VerticalAlignment="Center" IsVisible="{Binding CanArchive}"
+              <Button Classes="ghost" Padding="8,4" VerticalAlignment="Center" IsVisible="{Binding CanArchive}"
                       Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).ArchiveCardFromDetailCommand}"
                       ToolTip.Tip="{loc:Tr Kanban_Detail_ArchiveTooltip}" AutomationProperties.Name="{loc:Tr Kanban_Detail_ArchiveTooltip}">
                 <StackPanel Orientation="Horizontal" Spacing="7">
@@ -2801,7 +2801,7 @@
                 </StackPanel>
               </Button>
 
-              <Button Classes="ghost" Padding="0" VerticalAlignment="Center" IsVisible="{Binding IsArchived}"
+              <Button Classes="ghost" Padding="8,4" VerticalAlignment="Center" IsVisible="{Binding IsArchived}"
                       Command="{Binding $parent[UserControl].((vm:KanbanViewModel)DataContext).UnarchiveCardFromDetailCommand}"
                       ToolTip.Tip="{loc:Tr Kanban_Detail_UnarchiveTooltip}" AutomationProperties.Name="{loc:Tr Kanban_Detail_UnarchiveTooltip}">
                 <StackPanel Orientation="Horizontal" Spacing="7">

@@ -15,7 +15,7 @@
        hasta dónde llega. El menú permite elegir el espacio (antes del primer mensaje), el acceso a sesiones de
        un chat del vault y el permiso de consulta, que se concede o se revoca aquí. -->
   <Panel>
-    <Button x:Name="ScopeTrigger" Classes="date-picker-trigger" HorizontalAlignment="Left"
+    <Button x:Name="ScopeTrigger" Classes="date-picker-trigger ai-trigger" Classes.open="{Binding IsScopePickerOpen}" HorizontalAlignment="Left"
             VerticalAlignment="Center" Padding="10,7" MaxWidth="280"
             Command="{Binding ToggleScopePickerCommand}"
             ToolTip.Tip="{loc:Tr Assistant_Scope_Tooltip}" AutomationProperties.Name="{loc:Tr Assistant_Scope_Tooltip}">
@@ -35,11 +35,12 @@
       </Grid>
     </Button>
 
-    <Popup PlacementTarget="{Binding #ScopeTrigger}" Placement="BottomEdgeAlignedLeft" VerticalOffset="6"
+    <Popup x:Name="ScopePopup" PlacementTarget="{Binding #ScopeTrigger}" Placement="BottomEdgeAlignedLeft" VerticalOffset="6"
            IsLightDismissEnabled="True" OverlayInputPassThroughElement="{Binding #ScopeTrigger}"
            controls:PopoverKeyboard.CloseOnEscape="True"
+           controls:PopoverViewport.Constrain="True"
            controls:SharedPopover.IsOpen="{Binding IsScopePickerOpen, Mode=TwoWay}">
-      <Border Classes="dropdown-popover" Width="360" MaxHeight="600">
+      <Border Classes="dropdown-popover ai-popover" Width="360" MaxHeight="600">
         <ScrollViewer HorizontalScrollBarVisibility="Disabled">
           <StackPanel Spacing="12">
             <TextBlock Text="{loc:Tr Assistant_Scope_Title, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" FontSize="9.5" />
@@ -53,7 +54,7 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                   <DataTemplate DataType="vm:AiScopeOptionViewModel">
-                    <Button Classes="dropdown-item" IsEnabled="{Binding IsEnabled}"
+                    <Button Classes="dropdown-item" Classes.ai-scope-selected="{Binding IsSelected}" IsEnabled="{Binding IsEnabled}"
                             Command="{Binding #Root.((vm:AssistantViewModel)DataContext).PickScopeCommand}"
                             CommandParameter="{Binding}" AutomationProperties.Name="{Binding Name}">
                       <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*,Auto">
@@ -61,7 +62,7 @@
                                          Foreground="{DynamicResource Ink50}" VerticalAlignment="Center" />
                         <StackPanel Grid.Column="1" Spacing="1">
                           <TextBlock Text="{Binding Name}" FontSize="12.5" TextTrimming="CharacterEllipsis" />
-                          <TextBlock Text="{Binding Detail}" Classes="faint" TextTrimming="CharacterEllipsis" />
+                          <TextBlock Text="{Binding Detail}" Classes="muted" TextWrapping="Wrap" />
                         </StackPanel>
                         <mi:MaterialIcon Grid.Column="2" Kind="Check" Width="14" Height="14" Margin="10,0,0,0"
                                          VerticalAlignment="Center" IsVisible="{Binding IsSelected}" />
@@ -108,10 +109,10 @@
               </Button>
             </StackPanel>
 
-            <StackPanel Orientation="Horizontal" Spacing="8">
+            <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*" ColumnSpacing="8">
               <mi:MaterialIcon Kind="LockOutline" Width="12" Height="12" Foreground="{DynamicResource Ink40}" VerticalAlignment="Center" Margin="0,0,0,0" />
-              <TextBlock Text="{loc:Tr Assistant_Scope_ProtectedNote}" Classes="faint" FontSize="11" TextWrapping="Wrap" MaxWidth="300" />
-            </StackPanel>
+              <TextBlock Grid.Column="1" Text="{loc:Tr Assistant_Scope_ProtectedNote}" Classes="faint" FontSize="11" TextWrapping="Wrap" />
+            </Grid>
           </StackPanel>
         </ScrollViewer>
       </Border>

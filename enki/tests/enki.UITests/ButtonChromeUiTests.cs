@@ -26,7 +26,13 @@ namespace enki.UITests;
 [Collection(AvaloniaHeadlessCollection.Name)]
 public class ButtonChromeUiTests
 {
-    public ButtonChromeUiTests() => HeadlessApp.EnsureInitialized();
+    public ButtonChromeUiTests()
+    {
+        HeadlessApp.EnsureInitialized();
+        // Sin ventana principal no se aplica SettingsService: fijar un tema real evita que las
+        // pruebas aisladas comparen pinceles transparentes por falta de recursos de tema.
+        Application.Current!.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Dark;
+    }
 
     /// <summary>Las transiciones (BrushTransition sobre Background) se anulan a mano: si no, justo después
     /// de activar la pseudo-clase el ContentPresenter sigue devolviendo el color de reposo mientras la
@@ -310,6 +316,74 @@ public class ButtonChromeUiTests
 
         var expectedColor = expected == "Transparent" ? Colors.Transparent : ResourceColor(button, expected);
         Assert.Equal(expectedColor, ColorOf(box.Background));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SecondaryActions_KeepTheirButtonShape_InEveryStateAndContentForm(bool light)
+    {
+        var previousTheme = Application.Current!.RequestedThemeVariant ?? Application.Current.ActualThemeVariant;
+        var panel = new StackPanel { Spacing = 16, Margin = new Thickness(20) };
+        var window = new Window { Content = panel, Width = 1120, Height = 360 };
+        try
+        {
+            Application.Current.RequestedThemeVariant = light ? Avalonia.Styling.ThemeVariant.Light : Avalonia.Styling.ThemeVariant.Dark;
+            window.Show();
+            foreach (var classes in new[] { "ghost", "ghost modal-cancel" })
+            foreach (var nestedContent in new[] { false, true })
+            {
+                var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,*,*,*"), ColumnSpacing = 12 };
+                panel.Children.Add(row);
+                var column = 0;
+                foreach (var state in new[] { "normal", ":pointerover", ":focus-visible", ":disabled" })
+                {
+                    var label = state == ":disabled" ? "ELIMINAR RESULTADOS" : state.ToUpperInvariant();
+                    var button = new Button
+                    {
+                        Content = nestedContent ? new StackPanel
+                        {
+                            Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = 8,
+                            Children = { new MaterialIcon { Kind = MaterialIconKind.DeleteOutline, Width = 14, Height = 14 }, new TextBlock { Text = label } }
+                        } : label
+                    };
+                    foreach (var name in classes.Split(' ')) button.Classes.Add(name);
+                    Grid.SetColumn(button, column++);
+                    row.Children.Add(button);
+                    window.GetLayoutManager()!.ExecuteLayoutPass();
+                    var presenter = button.GetVisualDescendants().OfType<ContentPresenter>().First();
+                    button.Transitions = null;
+                    presenter.Transitions = null;
+                    if (state == ":disabled") button.IsEnabled = false;
+                    else if (state != "normal") SetState(button, state);
+                    window.GetLayoutManager()!.ExecuteLayoutPass();
+
+                    Assert.True(button.Bounds.Height >= 36);
+                    Assert.True(button.Padding.Left >= 14);
+                    Assert.True(presenter.BorderThickness.Left > 0);
+                    Assert.True(presenter.BorderThickness.Top > 0);
+                    Assert.Equal(Colors.Transparent, ColorOf(presenter.Background));
+                    Assert.Equal(ResourceColor(button, "TextPrimaryBrush"), ColorOf(presenter.Foreground));
+                    if (state == ":disabled") Assert.True(button.Opacity < 1);
+                    if (state == ":focus-visible")
+                        Assert.Equal(ResourceColor(button, "InkBrush"), ColorOf(presenter.BorderBrush));
+                }
+            }
+            window.GetLayoutManager()!.ExecuteLayoutPass();
+            if (Environment.GetEnvironmentVariable("ENKI_GRAPH_PREVIEW") is { Length: > 0 } directory)
+            {
+                System.IO.Directory.CreateDirectory(directory);
+                using var bitmap = new Avalonia.Media.Imaging.RenderTargetBitmap(new PixelSize(1120, 360));
+                bitmap.Render(window);
+                bitmap.Save(System.IO.Path.Combine(directory, $"secondary-buttons-{(light ? "light" : "dark")}.png"), Avalonia.Media.Imaging.PngBitmapEncoderOptions.Default);
+            }
+        }
+        finally
+        {
+            window.Close();
+            Application.Current.RequestedThemeVariant = previousTheme;
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        }
     }
 
 }

@@ -171,7 +171,7 @@
              se solapen en el ancho estrecho del popover (§la fila única los apretaba). -->
         <Rectangle Height="1" Fill="{DynamicResource Ink10}" />
         <StackPanel Spacing="8">
-          <Button Classes="ghost" Padding="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+          <Button Classes="ghost" Padding="8,4" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
                   IsVisible="{Binding CanToggleComplete}"
                   Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).ToggleCompleteItemCommand}"
                   CommandParameter="{Binding}">
@@ -181,7 +181,7 @@
             </StackPanel>
           </Button>
           <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding CanEdit}">
-            <Button Grid.Column="0" Classes="ghost" Padding="0" HorizontalAlignment="Stretch"
+            <Button Grid.Column="0" Classes="ghost" Padding="8,4" HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Left"
                     Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).RequestEditItemCommand}"
                     CommandParameter="{Binding}">
@@ -608,7 +608,7 @@
 
                               <!-- "Automático" solo aparece cuando hay un color elegido a mano que
                                    deshacer; si no, no hay nada que restablecer. -->
-                              <Button Classes="ghost" HorizontalAlignment="Left" Padding="0"
+                              <Button Classes="ghost" HorizontalAlignment="Left" Padding="8,4"
                                       IsVisible="{Binding HasCustomColor}"
                                       Command="{Binding UseAutomaticColorCommand}">
                                 <StackPanel Orientation="Horizontal" Spacing="6">
@@ -631,7 +631,7 @@
             </Border>
             <!-- Los países con festivos se eligen en Ajustes › Calendario; cada uno aparece arriba como
                  una capa más (docs/calendar-feature/15-festivos-y-dias-no-laborables.md). -->
-            <Button Classes="ghost" HorizontalAlignment="Left" Padding="0"
+            <Button Classes="ghost" HorizontalAlignment="Left" Padding="8,4"
                     IsVisible="{Binding CanOpenHolidaySettings}"
                     Command="{Binding OpenHolidaySettingsCommand}"
                     AutomationProperties.Name="{loc:Tr Calendar_Sidebar_ManageHolidays}">

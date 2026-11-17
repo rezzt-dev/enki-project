@@ -34,7 +34,7 @@
 
     <!-- El margen superior alinea el botón con la primera fila de chips, que arrastran su propio
          padding de 6px arriba desde el estilo tag-chip. -->
-    <Button Grid.Column="1" Classes="ghost" Margin="6,7,0,8" VerticalAlignment="Top"
+    <Button Grid.Column="1" Classes="ghost" Padding="8,2" MinHeight="22" Margin="6,7,0,8" VerticalAlignment="Top"
             IsVisible="{Binding HasHiddenTags}" Command="{Binding ToggleExpandedCommand}">
       <StackPanel Orientation="Horizontal" Spacing="5">
         <TextBlock Text="{loc:Tr TagFilter_ShowAll}" IsVisible="{Binding IsCollapsed}" />

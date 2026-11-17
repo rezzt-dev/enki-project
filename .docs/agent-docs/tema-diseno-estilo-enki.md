@@ -181,6 +181,8 @@ El botón secundario `pill` tiene fondo transparente, contorno de tinta, texto d
 
 El botón principal `pill-primary` parte de un relleno de tinta `#EEEEEE`, primer plano `#181818`, borde de 1,5 y relleno 18 × 10. La superficie clara le da prioridad en un entorno oscuro. Las acciones destructivas tienen variantes específicas que incorporan el color de peligro.
 
+Las acciones secundarias conservan la clase `ghost` en las vistas, pero se presentan como botones rectangulares: borde discreto `Ink30`, relleno interior de 14 × 8 y altura mínima de 36. Hover y foco refuerzan el contorno con tinta plena. Al desactivarse conservan la forma y atenúan todo el control; el fondo de Fluent no debe quedar ceñido a la etiqueta. La variante `modal-cancel` mantiene las dimensiones de la acción principal. Las acciones compactas integradas en tarjetas y filtros declaran su altura y relleno locales, conservando el contorno sin provocar saltos de altura al aparecer.
+
 Los botones `icon-btn` son acciones compactas para barras, cabeceras y controles auxiliares. Su estado se hace visible mediante el cambio de tinta o de fondo que corresponda a la clase. Deben contar con una identificación comprensible mediante etiqueta accesible o ayuda contextual cuando carezcan de texto visible.
 
 ### 7.2. Navegación, selección y pestañas

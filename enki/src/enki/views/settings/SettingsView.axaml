@@ -1257,7 +1257,7 @@
                         </ItemsControl>
                       </StackPanel>
 
-                      <Button Classes="ghost" Padding="0,4" HorizontalAlignment="Left" IsVisible="{Binding IsCustomThemeActive}" Command="{Binding UseSystemThemeCommand}">
+                      <Button Classes="ghost" Padding="8,4" HorizontalAlignment="Left" IsVisible="{Binding IsCustomThemeActive}" Command="{Binding UseSystemThemeCommand}">
                         <TextBlock Text="{loc:Tr Settings_Appearance_CustomTheme_UseSystemThemeButton, Converter={StaticResource UpperCaseConverter}}" />
                       </Button>
                     </StackPanel>
@@ -2643,17 +2643,17 @@
 
         <!-- ===================== Inteligencia artificial (.docs/project-info/asistente-ia.md) ===================== -->
         <controls:SettingsSearchOption Section="Ai" MatchDescendants="True" ResourceKeys="Settings_Nav_Ai">
-          <StackPanel Spacing="20">
-            <TextBlock IsVisible="{Binding IsSearching}" Text="{loc:Tr Settings_Nav_Ai, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+          <StackPanel Classes="ai-settings" Spacing="20">
+            <TextBlock IsVisible="{Binding IsSearching}" Text="{loc:Tr Settings_Nav_Ai, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" TextWrapping="Wrap" />
 
             <controls:SettingsSearchOption
                 ResourceKeys="Settings_Nav_Ai Settings_Ai_Section_Title Settings_Ai_Enable_Label Settings_Ai_Enable_Description">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="14">
-                  <StackPanel Orientation="Horizontal" Spacing="9">
+                  <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*" ColumnSpacing="10">
                     <mi:MaterialIcon Kind="Creation" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
-                    <TextBlock Text="{loc:Tr Settings_Ai_Section_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
-                  </StackPanel>
+                    <TextBlock Grid.Column="1" Text="{loc:Tr Settings_Ai_Section_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" TextWrapping="Wrap" />
+                  </Grid>
                   <Grid ColumnDefinitions="*,Auto">
                     <StackPanel Grid.Column="0" Spacing="3" Margin="0,0,16,0">
                       <TextBlock Text="{loc:Tr Settings_Ai_Enable_Label}" FontSize="13" />
@@ -2673,16 +2673,16 @@
                 ResourceKeys="Settings_Nav_Ai Settings_Ai_Persona_Title Settings_Ai_Persona_Intro Settings_Ai_Persona_Name Settings_Ai_Persona_Context">
               <Border Classes="card" Padding="22" IsEnabled="{Binding CanEditAiPersona}">
                 <StackPanel Spacing="14">
-                  <StackPanel Orientation="Horizontal" Spacing="9">
+                  <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*" ColumnSpacing="10">
                     <mi:MaterialIcon Kind="CardAccountDetailsOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
-                    <TextBlock Text="{loc:Tr Settings_Ai_Persona_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
-                  </StackPanel>
+                    <TextBlock Grid.Column="1" Text="{loc:Tr Settings_Ai_Persona_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" TextWrapping="Wrap" />
+                  </Grid>
                   <TextBlock Text="{loc:Tr Settings_Ai_Persona_Intro}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
 
                   <StackPanel Spacing="6">
                     <Grid ColumnDefinitions="*,Auto">
                       <TextBlock Text="{loc:Tr Settings_Ai_Persona_Name}" FontSize="13" />
-                      <TextBlock Grid.Column="1" Text="{Binding AiPersonaNameCounter}" Classes="faint" />
+                      <TextBlock Grid.Column="1" Text="{Binding AiPersonaNameCounter}" Classes="muted" />
                     </Grid>
                     <TextBox Classes="search" Text="{Binding AiPersonaNameDraft}" MaxLength="{x:Static models:AiPersona.MaxNameLength}"
                              PlaceholderText="{loc:Tr Settings_Ai_Persona_NamePlaceholder}"
@@ -2692,28 +2692,28 @@
                   <StackPanel Spacing="6">
                     <Grid ColumnDefinitions="*,Auto">
                       <TextBlock Text="{loc:Tr Settings_Ai_Persona_Context}" FontSize="13" />
-                      <TextBlock Grid.Column="1" Text="{Binding AiPersonaContextCounter}" Classes="faint" />
+                      <TextBlock Grid.Column="1" Text="{Binding AiPersonaContextCounter}" Classes="muted" />
                     </Grid>
                     <TextBox Classes="search" Text="{Binding AiPersonaContextDraft}" MaxLength="{x:Static models:AiPersona.MaxContextLength}"
                              AcceptsReturn="True" TextWrapping="Wrap" Height="150" VerticalContentAlignment="Top"
                              PlaceholderText="{loc:Tr Settings_Ai_Persona_ContextPlaceholder}"
                              AutomationProperties.Name="{loc:Tr Settings_Ai_Persona_Context}" />
-                    <TextBlock Text="{loc:Tr Settings_Ai_Persona_ContextHelp}" Classes="faint" FontSize="11.5" TextWrapping="Wrap" />
+                    <TextBlock Text="{loc:Tr Settings_Ai_Persona_ContextHelp}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
                   </StackPanel>
 
-                  <Grid ColumnDefinitions="*,Auto,Auto">
-                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center"
+                  <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" RowSpacing="10">
+                    <Grid Grid.ColumnSpan="2" ColumnDefinitions="Auto,*" ColumnSpacing="6" VerticalAlignment="Center"
                                 IsVisible="{Binding HasAiPersonaStatus}">
                       <mi:MaterialIcon Kind="CheckCircleOutline" Width="13" Height="13" Foreground="{DynamicResource Ink50}"
                                        IsVisible="{Binding !AiPersonaStatusIsError}" />
                       <mi:MaterialIcon Kind="AlertCircleOutline" Width="13" Height="13" Foreground="{DynamicResource DangerBrush}"
                                        IsVisible="{Binding AiPersonaStatusIsError}" />
-                      <TextBlock Text="{Binding AiPersonaStatus}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
-                    </StackPanel>
-                    <Button Grid.Column="1" Classes="ghost" Margin="0,0,8,0" Command="{Binding DiscardAiPersonaChangesCommand}">
+                      <TextBlock Grid.Column="1" AutomationProperties.LiveSetting="Polite" Text="{Binding AiPersonaStatus}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+                    </Grid>
+                    <Button Grid.Row="1" Grid.Column="0" HorizontalAlignment="Right" Classes="ghost" Margin="0,0,8,0" Command="{Binding DiscardAiPersonaChangesCommand}">
                       <TextBlock Text="{loc:Tr Settings_Ai_Persona_Discard, Converter={StaticResource UpperCaseConverter}}" />
                     </Button>
-                    <Button Grid.Column="2" Classes="pill-primary" Command="{Binding SaveAiPersonaCommand}">
+                    <Button Grid.Row="1" Grid.Column="1" Classes="pill-primary" Command="{Binding SaveAiPersonaCommand}">
                       <TextBlock Text="{loc:Tr Settings_Ai_Persona_Save, Converter={StaticResource UpperCaseConverter}}" />
                     </Button>
                   </Grid>
@@ -2724,7 +2724,7 @@
             <controls:SettingsSearchOption ResourceKeys="Settings_Nav_Ai Ai_Provider Ai_ProviderHelp Ai_LocalEndpoint Ai_CustomModel Settings_Ai_ClaudeAuth_Label Settings_Ai_ClaudeAuth_ApiKey Ai_GeminiHelp Ai_GeminiStudents">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="12">
-                  <TextBlock Text="{loc:Tr Ai_Provider, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
+                  <TextBlock Text="{loc:Tr Ai_Provider, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" TextWrapping="Wrap" />
                   <ComboBox ItemsSource="{Binding AiProviderOptions}" SelectedItem="{Binding AiProvider}"
                             HorizontalAlignment="Stretch" IsEnabled="{Binding !AiCliStatus.IsBusy}"
                             AutomationProperties.Name="{loc:Tr Ai_Provider}" />
@@ -2733,7 +2733,7 @@
                     <TextBlock Text="{loc:Tr Ai_OpenAiHelp}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
                     <TextBlock Text="{loc:Tr Ai_CodexPath}" FontSize="13" />
                     <TextBox Classes="search" Text="{Binding AiCodexPath}" AutomationProperties.Name="{loc:Tr Ai_CodexPath}" />
-                    <TextBlock Text="{Binding AiCliStatus.LoginCommand}" FontFamily="{DynamicResource CodeFontFamily}" FontSize="12" />
+                    <SelectableTextBlock Text="{Binding AiCliStatus.LoginCommand}" TextWrapping="Wrap" FontFamily="{DynamicResource CodeFontFamily}" FontSize="12" />
                     <TextBlock Text="{loc:Tr Ai_CustomModel}" FontSize="13" />
                     <TextBox Classes="search" Text="{Binding AiCustomModel}" AutomationProperties.Name="{loc:Tr Ai_CustomModel}" />
                   </StackPanel>
@@ -2741,14 +2741,14 @@
                        Enki guarda en el almacén seguro del sistema y pasa al mismo CLI al lanzar cada turno. -->
                   <StackPanel IsVisible="{Binding IsAiClaude}" Spacing="10">
                     <TextBlock Text="{loc:Tr Settings_Ai_ClaudeAuth_Label}" FontSize="13" />
-                    <StackPanel Orientation="Horizontal">
+                    <WrapPanel ItemSpacing="0" LineSpacing="6">
                       <RadioButton Classes="segment" GroupName="AiClaudeAuth"
                                    Content="{loc:Tr Settings_Ai_ClaudeAuth_Subscription, Converter={StaticResource UpperCaseConverter}}"
                                    IsChecked="{Binding !AiClaudeUseApi, Mode=OneWay}" Command="{Binding UseClaudeSubscriptionCommand}" />
                       <RadioButton Classes="segment" GroupName="AiClaudeAuth"
                                    Content="{loc:Tr Settings_Ai_ClaudeAuth_ApiKey, Converter={StaticResource UpperCaseConverter}}"
                                    IsChecked="{Binding AiClaudeUseApi, Mode=OneWay}" Command="{Binding UseClaudeApiKeyCommand}" />
-                    </StackPanel>
+                    </WrapPanel>
                     <TextBlock Text="{loc:Tr Settings_Ai_ClaudeAuth_SubscriptionHelp}" Classes="muted" FontSize="12" TextWrapping="Wrap"
                                IsVisible="{Binding !AiClaudeUseApi}" />
                   </StackPanel>
@@ -2800,11 +2800,9 @@
                     <TextBlock Text="{loc:Tr Ai_LocalHelp}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
                     <TextBlock Text="{loc:Tr Ai_LocalEndpoint}" FontSize="13" />
                     <TextBox Classes="search" Text="{Binding AiLocalEndpoint}" AutomationProperties.Name="{loc:Tr Ai_LocalEndpoint}" />
-                    <TextBlock Text="{Binding AiCliStatus.LoginCommand}" FontFamily="{DynamicResource CodeFontFamily}" FontSize="12" />
+                    <SelectableTextBlock Text="{Binding AiCliStatus.LoginCommand}" TextWrapping="Wrap" FontFamily="{DynamicResource CodeFontFamily}" FontSize="12" />
                   </StackPanel>
-                  <Button Classes="pill" Command="{Binding CheckClaudeCliCommand}" IsEnabled="{Binding AiEnabled}">
-                    <TextBlock Text="{loc:Tr Settings_Ai_Cli_Check, Converter={StaticResource UpperCaseConverter}}" />
-                  </Button>
+
                 </StackPanel>
               </Border>
             </controls:SettingsSearchOption>
@@ -2816,10 +2814,10 @@
                               Settings_Ai_Usage_Data Settings_Ai_Usage_Terms Settings_Ai_Usage_ClaudeCodeTerms Settings_Ai_Usage_ConsumerTerms">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="14">
-                  <StackPanel Orientation="Horizontal" Spacing="9">
+                  <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*" ColumnSpacing="10">
                     <mi:MaterialIcon Kind="ShieldLockOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
-                    <TextBlock Text="{loc:Tr Settings_Ai_Usage_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
-                  </StackPanel>
+                    <TextBlock Grid.Column="1" Text="{loc:Tr Settings_Ai_Usage_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" TextWrapping="Wrap" />
+                  </Grid>
                   <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="12">
                     <mi:MaterialIcon Grid.Row="0" Kind="ConsoleLine" Width="14" Height="14" Margin="0,0,12,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink50}" />
                     <TextBlock Grid.Row="0" Grid.Column="1" Text="{loc:Tr Settings_Ai_Usage_HowItWorks}" Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
@@ -2852,10 +2850,10 @@
                 ResourceKeys="Settings_Nav_Ai Settings_Ai_Cli_Title Settings_Ai_Cli_Path_Label Settings_Ai_Cli_Path_Description Settings_Ai_Cli_Check">
               <Border Classes="card" Padding="22" IsVisible="{Binding AiStatusVisible}">
                 <StackPanel Spacing="16">
-                  <StackPanel Orientation="Horizontal" Spacing="9">
+                  <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*" ColumnSpacing="10">
                     <mi:MaterialIcon Kind="ConsoleLine" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
-                    <TextBlock Text="{loc:Tr Settings_Ai_Cli_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
-                  </StackPanel>
+                    <TextBlock Grid.Column="1" Text="{loc:Tr Settings_Ai_Cli_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" TextWrapping="Wrap" />
+                  </Grid>
 
                   <Grid ColumnDefinitions="Auto,*,Auto">
                     <Ellipse Grid.Column="0" Width="8" Height="8" Margin="0,0,12,0" VerticalAlignment="Center"
@@ -2866,9 +2864,9 @@
                       <TextBlock Text="{Binding AiCliStatus.StateLabel}" FontSize="13" />
                       <TextBlock Text="{Binding AiCliStatus.AccountLabel}" Classes="muted" FontSize="11.5"
                                  IsVisible="{Binding AiCliStatus.HasAccount}" TextTrimming="CharacterEllipsis" />
-                      <TextBlock Text="{Binding AiCliStatus.VersionLabel}" Classes="faint" FontSize="11"
+                      <TextBlock Text="{Binding AiCliStatus.VersionLabel}" Classes="muted" FontSize="11"
                                  IsVisible="{Binding AiCliStatus.VersionLabel, Converter={x:Static baseconv:StringConverters.IsNotNullOrEmpty}}" />
-                      <TextBlock Text="{Binding AiCliStatus.ExecutablePathLabel}" Classes="faint" FontSize="11" TextWrapping="Wrap"
+                      <TextBlock Text="{Binding AiCliStatus.ExecutablePathLabel}" Classes="muted" FontSize="11" TextWrapping="Wrap"
                                  IsVisible="{Binding AiCliStatus.ExecutablePathLabel, Converter={x:Static baseconv:StringConverters.IsNotNullOrEmpty}}" />
                     </StackPanel>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top">
@@ -2927,16 +2925,16 @@
                               Settings_Ai_Context_Description Settings_Ai_Confirm_Label Settings_Ai_Confirm_Description Settings_Ai_Usage_Label Settings_Ai_Usage_Description">
               <Border Classes="card" Padding="22" IsEnabled="{Binding AiEnabled}">
                 <StackPanel Spacing="16">
-                  <StackPanel Orientation="Horizontal" Spacing="9">
+                  <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*" ColumnSpacing="10">
                     <mi:MaterialIcon Kind="MessageTextOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
-                    <TextBlock Text="{loc:Tr Settings_Ai_Chat_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
-                  </StackPanel>
-                  <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding !IsAiOpenAi}">
+                    <TextBlock Grid.Column="1" Text="{loc:Tr Settings_Ai_Chat_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" TextWrapping="Wrap" />
+                  </Grid>
+                  <Grid ColumnDefinitions="*" RowDefinitions="Auto,Auto" RowSpacing="10" IsVisible="{Binding !IsAiOpenAi}">
                     <StackPanel Grid.Column="0" Spacing="3" Margin="0,0,16,0">
                       <TextBlock Text="{loc:Tr Settings_Ai_Model_Label}" FontSize="13" />
                       <TextBlock Text="{loc:Tr Settings_Ai_Model_Description}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
                     </StackPanel>
-                    <ComboBox Grid.Column="1" Width="190" VerticalAlignment="Center" ItemsSource="{Binding AiModelOptions}"
+                    <ComboBox Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Center" ItemsSource="{Binding AiModelOptions}"
                               SelectedItem="{Binding AiDefaultModel}" AutomationProperties.Name="{loc:Tr Settings_Ai_Model_Label}">
                       <ComboBox.ItemTemplate>
                         <DataTemplate DataType="vm:AiModelOption">
@@ -2945,22 +2943,22 @@
                       </ComboBox.ItemTemplate>
                     </ComboBox>
                   </Grid>
-                  <Grid ColumnDefinitions="*,Auto">
+                  <Grid ColumnDefinitions="*" RowDefinitions="Auto,Auto" RowSpacing="10">
                     <StackPanel Grid.Column="0" Spacing="3" Margin="0,0,16,0">
                       <TextBlock Text="{loc:Tr Settings_Ai_Timeout_Label}" FontSize="13" />
                       <TextBlock Text="{loc:Tr Settings_Ai_Timeout_Description}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
                     </StackPanel>
-                    <NumericUpDown Grid.Column="1" Value="{Binding AiIdleTimeoutSeconds}" Minimum="30" Maximum="1800" Increment="30"
-                                   Width="130" ShowButtonSpinner="True" VerticalAlignment="Center"
+                    <NumericUpDown Grid.Row="1" Value="{Binding AiIdleTimeoutSeconds}" Minimum="30" Maximum="1800" Increment="30"
+                                   Width="130" ShowButtonSpinner="True" VerticalAlignment="Center" HorizontalAlignment="Left"
                                    AutomationProperties.Name="{loc:Tr Settings_Ai_Timeout_Label}" />
                   </Grid>
-                  <Grid ColumnDefinitions="*,Auto">
+                  <Grid ColumnDefinitions="*" RowDefinitions="Auto,Auto" RowSpacing="10">
                     <StackPanel Grid.Column="0" Spacing="3" Margin="0,0,16,0">
                       <TextBlock Text="{loc:Tr Settings_Ai_Context_Label}" FontSize="13" />
                       <TextBlock Text="{loc:Tr Settings_Ai_Context_Description}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
                     </StackPanel>
-                    <NumericUpDown Grid.Column="1" Value="{Binding AiMaxContextChars}" Minimum="2000" Maximum="200000" Increment="2000"
-                                   Width="130" ShowButtonSpinner="True" VerticalAlignment="Center"
+                    <NumericUpDown Grid.Row="1" Value="{Binding AiMaxContextChars}" Minimum="2000" Maximum="200000" Increment="2000"
+                                   Width="130" ShowButtonSpinner="True" VerticalAlignment="Center" HorizontalAlignment="Left"
                                    AutomationProperties.Name="{loc:Tr Settings_Ai_Context_Label}" />
                   </Grid>
                   <Grid ColumnDefinitions="*,Auto">
@@ -2989,10 +2987,10 @@
                 ResourceKeys="Settings_Ai_Vault_DefaultAccess_Label Settings_Ai_Vault_DefaultAccess_Description Settings_Nav_Ai Settings_Ai_Vault_Title Settings_Ai_Vault_AllowChanges_Label Settings_Ai_Vault_AllowChanges_Description Settings_Ai_Vault_Review_Label Settings_Ai_Vault_Review_Description Settings_Ai_Vault_Scopes Settings_Ai_Vault_Protected Settings_Ai_Vault_Confirmations">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="14">
-                  <StackPanel Orientation="Horizontal" Spacing="9">
+                  <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*" ColumnSpacing="10">
                     <mi:MaterialIcon Kind="FolderEditOutline" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
-                    <TextBlock Text="{loc:Tr Settings_Ai_Vault_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
-                  </StackPanel>
+                    <TextBlock Grid.Column="1" Text="{loc:Tr Settings_Ai_Vault_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" TextWrapping="Wrap" />
+                  </Grid>
                   <Grid ColumnDefinitions="*,Auto">
                     <StackPanel Grid.Column="0" Spacing="3" Margin="0,0,16,0">
                       <TextBlock Text="{loc:Tr Settings_Ai_Vault_DefaultAccess_Label}" FontSize="13" />
@@ -3045,10 +3043,10 @@
                 ResourceKeys="Settings_Nav_Ai Settings_Ai_Web_Title Settings_Ai_Web_NewChats_Label Settings_Ai_Web_NewChats_Description Settings_Ai_Web_Engine_Label Settings_Ai_Web_Privacy Settings_Ai_Web_Safety">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="14">
-                  <StackPanel Orientation="Horizontal" Spacing="9">
+                  <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*" ColumnSpacing="10">
                     <mi:MaterialIcon Kind="Web" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
-                    <TextBlock Text="{loc:Tr Settings_Ai_Web_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
-                  </StackPanel>
+                    <TextBlock Grid.Column="1" Text="{loc:Tr Settings_Ai_Web_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" TextWrapping="Wrap" />
+                  </Grid>
                   <Grid ColumnDefinitions="*,Auto">
                     <StackPanel Grid.Column="0" Spacing="3" Margin="0,0,16,0">
                       <TextBlock Text="{loc:Tr Settings_Ai_Web_NewChats_Label}" FontSize="13" />
@@ -3059,12 +3057,12 @@
                   </Grid>
                   <StackPanel Spacing="10">
                     <TextBlock Text="{loc:Tr Settings_Ai_Web_Engine_Label}" FontSize="13" />
-                    <StackPanel Orientation="Horizontal">
+                    <WrapPanel ItemSpacing="0" LineSpacing="6">
                       <RadioButton Classes="segment" GroupName="AiWebEngine" Content="DUCKDUCKGO"
                                    IsChecked="{Binding IsAiWebDuckDuckGo, Mode=OneWay}" Command="{Binding UseDuckDuckGoSearchCommand}" />
                       <RadioButton Classes="segment" GroupName="AiWebEngine" Content="BRAVE SEARCH"
                                    IsChecked="{Binding IsAiWebBrave, Mode=OneWay}" Command="{Binding UseBraveSearchCommand}" />
-                    </StackPanel>
+                    </WrapPanel>
                     <TextBlock Text="{loc:Tr Settings_Ai_Web_DuckDuckGoHelp}" Classes="muted" FontSize="12" TextWrapping="Wrap"
                                IsVisible="{Binding IsAiWebDuckDuckGo}" />
                   </StackPanel>
@@ -3121,10 +3119,10 @@
                 ResourceKeys="Settings_Nav_Ai Settings_Ai_Semantic_Title Settings_Ai_Semantic_Enable_Label Settings_Ai_Semantic_Enable_Description Settings_Ai_Semantic_Model_Label Settings_Ai_Semantic_Privacy">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="14">
-                  <StackPanel Orientation="Horizontal" Spacing="9">
+                  <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*" ColumnSpacing="10">
                     <mi:MaterialIcon Kind="VectorTriangle" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
-                    <TextBlock Text="{loc:Tr Settings_Ai_Semantic_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
-                  </StackPanel>
+                    <TextBlock Grid.Column="1" Text="{loc:Tr Settings_Ai_Semantic_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" TextWrapping="Wrap" />
+                  </Grid>
                   <Grid ColumnDefinitions="*,Auto">
                     <StackPanel Grid.Column="0" Spacing="3" Margin="0,0,16,0">
                       <TextBlock Text="{loc:Tr Settings_Ai_Semantic_Enable_Label}" FontSize="13" />
@@ -3193,10 +3191,10 @@
                 ResourceKeys="Settings_Nav_Ai Settings_Ai_History_Title Settings_Ai_History_Description Settings_Ai_History_Clear">
               <Border Classes="card" Padding="22">
                 <StackPanel Spacing="14">
-                  <StackPanel Orientation="Horizontal" Spacing="9">
+                  <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*" ColumnSpacing="10">
                     <mi:MaterialIcon Kind="History" Width="15" Height="15" Foreground="{DynamicResource Ink40}" />
-                    <TextBlock Text="{loc:Tr Settings_Ai_History_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" />
-                  </StackPanel>
+                    <TextBlock Grid.Column="1" Text="{loc:Tr Settings_Ai_History_Title, Converter={StaticResource UpperCaseConverter}}" Classes="section-title" TextWrapping="Wrap" />
+                  </Grid>
                   <Grid ColumnDefinitions="*,Auto">
                     <StackPanel Grid.Column="0" Spacing="3" Margin="0,0,16,0">
                       <TextBlock Text="{Binding AiHistoryCountLabel}" FontSize="13" />
@@ -4115,69 +4113,77 @@
   </controls:ModalOverlayHost>
 
     <!-- ===================== Diálogo: activar el asistente de IA por primera vez ===================== -->
-    <controls:ModalOverlayHost IsOpen="{Binding IsAiConsentDialogOpen}">
+    <controls:ModalOverlayHost ConstrainContent="True" IsOpen="{Binding IsAiConsentDialogOpen}">
       <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="480">
-        <StackPanel Spacing="16">
-          <StackPanel Orientation="Horizontal" Spacing="10">
-            <mi:MaterialIcon Kind="ShieldLockOutline" Width="18" Height="18" Foreground="{DynamicResource Ink40}" />
-            <TextBlock Text="{loc:Tr Settings_Ai_Consent_Title, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" VerticalAlignment="Center" />
-          </StackPanel>
-          <TextBlock Text="{loc:Tr Settings_Ai_Consent_Intro}" FontSize="13.5" TextWrapping="Wrap" />
-          <StackPanel Spacing="10">
-            <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*">
-              <mi:MaterialIcon Kind="ConsoleLine" Width="13" Height="13" Margin="0,0,10,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink50}" />
-              <TextBlock Grid.Column="1" Text="{loc:Tr Settings_Ai_Usage_HowItWorks}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
-            </Grid>
-            <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*">
-              <mi:MaterialIcon Kind="AccountKeyOutline" Width="13" Height="13" Margin="0,0,10,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink50}" />
-              <TextBlock Grid.Column="1" Text="{loc:Tr Settings_Ai_Usage_SignIn}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
-            </Grid>
-            <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*">
-              <mi:MaterialIcon Kind="NoteTextOutline" Width="13" Height="13" Margin="0,0,10,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink50}" />
-              <TextBlock Grid.Column="1" Text="{loc:Tr Settings_Ai_Usage_Data}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
-            </Grid>
-            <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*">
-              <mi:MaterialIcon Kind="ScaleBalance" Width="13" Height="13" Margin="0,0,10,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink50}" />
-              <TextBlock Grid.Column="1" Text="{loc:Tr Settings_Ai_Usage_Terms}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
-            </Grid>
-          </StackPanel>
-          <Button Classes="ghost" HorizontalAlignment="Left" Command="{Binding OpenAiTermsCommand}">
-            <StackPanel Orientation="Horizontal" Spacing="6">
-              <mi:MaterialIcon Kind="OpenInNew" Width="12" Height="12" />
-              <TextBlock Text="{loc:Tr Settings_Ai_Usage_ClaudeCodeTerms, Converter={StaticResource UpperCaseConverter}}" />
+        <Grid RowDefinitions="*,Auto" RowSpacing="20">
+          <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Spacing="16">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <mi:MaterialIcon Kind="ShieldLockOutline" Width="18" Height="18" Foreground="{DynamicResource Ink40}" />
+                <TextBlock Text="{loc:Tr Settings_Ai_Consent_Title, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow" VerticalAlignment="Center" />
+              </StackPanel>
+              <TextBlock Text="{loc:Tr Settings_Ai_Consent_Intro}" FontSize="13.5" TextWrapping="Wrap" />
+              <StackPanel Spacing="10">
+                <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*">
+                  <mi:MaterialIcon Kind="ConsoleLine" Width="13" Height="13" Margin="0,0,10,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink50}" />
+                  <TextBlock Grid.Column="1" Text="{loc:Tr Settings_Ai_Usage_HowItWorks}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+                </Grid>
+                <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*">
+                  <mi:MaterialIcon Kind="AccountKeyOutline" Width="13" Height="13" Margin="0,0,10,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink50}" />
+                  <TextBlock Grid.Column="1" Text="{loc:Tr Settings_Ai_Usage_SignIn}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+                </Grid>
+                <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*">
+                  <mi:MaterialIcon Kind="NoteTextOutline" Width="13" Height="13" Margin="0,0,10,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink50}" />
+                  <TextBlock Grid.Column="1" Text="{loc:Tr Settings_Ai_Usage_Data}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+                </Grid>
+                <Grid Classes="icon-text-row" ColumnDefinitions="Auto,*">
+                  <mi:MaterialIcon Kind="ScaleBalance" Width="13" Height="13" Margin="0,0,10,0" VerticalAlignment="Center" Foreground="{DynamicResource Ink50}" />
+                  <TextBlock Grid.Column="1" Text="{loc:Tr Settings_Ai_Usage_Terms}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+                </Grid>
+              </StackPanel>
+              <Button Classes="ghost" HorizontalAlignment="Left" Command="{Binding OpenAiTermsCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="OpenInNew" Width="12" Height="12" />
+                  <TextBlock Text="{loc:Tr Settings_Ai_Usage_ClaudeCodeTerms, Converter={StaticResource UpperCaseConverter}}" />
+                </StackPanel>
+              </Button>
             </StackPanel>
-          </Button>
-          <Grid ColumnDefinitions="*,Auto,Auto">
-            <Button Grid.Column="1" Classes="ghost modal-cancel" Margin="0,0,18,0" Command="{Binding DeclineAiConsentCommand}">
+          </ScrollViewer>
+          <WrapPanel Grid.Row="1" HorizontalAlignment="Right" ItemSpacing="12" LineSpacing="8">
+            <Button Classes="ghost modal-cancel" Command="{Binding DeclineAiConsentCommand}">
               <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
             </Button>
-            <Button Grid.Column="2" Classes="pill-primary" Command="{Binding AcceptAiConsentCommand}">
+            <Button Classes="pill-primary" Command="{Binding AcceptAiConsentCommand}">
               <TextBlock Text="{loc:Tr Settings_Ai_Consent_Accept, Converter={StaticResource UpperCaseConverter}}" />
             </Button>
-          </Grid>
-        </StackPanel>
+          </WrapPanel>
+        </Grid>
       </Border>
     </controls:ModalOverlayHost>
 
     <!-- ===================== Diálogo: borrar el historial del asistente ===================== -->
-    <controls:ModalOverlayHost IsOpen="{Binding IsClearAiHistoryConfirmOpen}">
+    <controls:ModalOverlayHost ConstrainContent="True" IsOpen="{Binding IsClearAiHistoryConfirmOpen}">
       <Border Classes="modal-card" HorizontalAlignment="Center" VerticalAlignment="Center">
-        <StackPanel Spacing="18">
-          <StackPanel Orientation="Horizontal" Spacing="10">
-            <mi:MaterialIcon Kind="AlertCircleOutline" Width="18" Height="18" Foreground="{DynamicResource DangerBrush}" />
-            <TextBlock Text="{loc:Tr Settings_Ai_History_ClearDialog_Title, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow"
-                       Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Center" />
-          </StackPanel>
-          <TextBlock Text="{loc:Tr Settings_Ai_History_ClearDialog_Message}" FontSize="14" TextWrapping="Wrap" MaxWidth="320" />
-          <Grid ColumnDefinitions="*,Auto,Auto">
-            <Button Grid.Column="1" Classes="ghost modal-cancel" Margin="0,0,18,0" Command="{Binding CancelClearAiHistoryCommand}">
+        <Grid RowDefinitions="*,Auto" RowSpacing="20">
+          <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Spacing="18">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <mi:MaterialIcon Kind="AlertCircleOutline" Width="18" Height="18" Foreground="{DynamicResource DangerBrush}" />
+                <TextBlock Text="{loc:Tr Settings_Ai_History_ClearDialog_Title, Converter={StaticResource UpperCaseConverter}}" Classes="eyebrow"
+                           Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Center" />
+              </StackPanel>
+              <TextBlock Text="{loc:Tr Settings_Ai_History_ClearDialog_Message}" FontSize="14" TextWrapping="Wrap" MaxWidth="320" />
+            </StackPanel>
+          </ScrollViewer>
+          <WrapPanel Grid.Row="1" HorizontalAlignment="Right" ItemSpacing="12" LineSpacing="8">
+            <Button Classes="ghost modal-cancel" Command="{Binding CancelClearAiHistoryCommand}">
               <TextBlock Text="{loc:Tr Common_Cancel, Converter={StaticResource UpperCaseConverter}}" />
             </Button>
-            <Button Grid.Column="2" Classes="pill-primary-danger" Command="{Binding ConfirmClearAiHistoryCommand}">
+            <Button Classes="pill-primary-danger" Command="{Binding ConfirmClearAiHistoryCommand}">
               <TextBlock Text="{loc:Tr Settings_Ai_History_Clear, Converter={StaticResource UpperCaseConverter}}" />
             </Button>
-          </Grid>
-        </StackPanel>
+          </WrapPanel>
+        </Grid>
       </Border>
     </controls:ModalOverlayHost>
   </Grid>

@@ -441,7 +441,7 @@
                                        IsVisible="{Binding HasMessage}" />
                             <!-- Acción del aviso (T9: "Descargar"). El enlace pasa otra vez por
                                  ExternalLinkPolicy al abrirse, ver NotificationCenterViewModel.OpenLink. -->
-                            <Button Classes="ghost" Padding="0,2" HorizontalAlignment="Left"
+                            <Button Classes="ghost" Padding="8,2" HorizontalAlignment="Left"
                                     IsVisible="{Binding HasLink}"
                                     Command="{Binding $parent[ItemsControl].DataContext.OpenLinkCommand}"
                                     CommandParameter="{Binding}">
