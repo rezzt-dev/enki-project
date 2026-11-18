@@ -309,6 +309,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - partir en varias líneas la nota de privacidad de la bienvenida del asistente en el panel lateral, que se salía por el borde derecho.
 - conservar el destino de los enlaces que cuelgan directamente de un bloque al convertir HTML a Markdown, que se perdían en las notas del web clipper y en las páginas leídas por el asistente.
 - refrescar el permiso de consulta y la disponibilidad del acceso a internet del asistente cuando cambia el estado del proveedor, que no se notificaba.
+- corregir los iconos de la lista y del detalle de `recordatorios`, que bajaban fuera de su caja al alinearse con el bloque de texto contiguo: `RemindersView.axaml` desactiva `IconTextAlignment` en ellos y los centra en la caja
 
 ### ENGLISH
 
@@ -611,6 +612,7 @@ decir, cualquier cambio puede romper compatibilidad entre versiones menores hast
 - wrap the assistant welcome privacy note onto several lines in the side panel, where it ran off the right edge.
 - keep the destination of links hanging directly from a block when converting HTML to Markdown, which were lost in web clipper notes and in pages read by the assistant.
 - refresh the assistant read permission and internet access availability when the provider state changes, which was not being notified.
+- fix the icons in the `reminders` list and detail, which dropped out of their box by aligning with the adjacent text block: `RemindersView.axaml` disables `IconTextAlignment` on them and centres them in the box
 
 ## [0.2.0] - 2026-09-23
 
